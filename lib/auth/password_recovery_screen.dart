@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
+import '../services/otp_service.dart';
 import 'verify_code_screen.dart';
 
 class PasswordRecoveryScreen extends StatefulWidget {
@@ -12,28 +13,40 @@ class PasswordRecoveryScreen extends StatefulWidget {
 class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailPhoneController = TextEditingController();
+  final _otpService = OTPService();
   bool _isLoading = false;
 
   Future<void> _sendCode() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      // For email password reset
-      await FirebaseAuth.instance.sendPasswordResetEmail(
-        email: _emailPhoneController.text.trim(),
+      final email = _emailPhoneController.text.trim();
+      
+      // Generate and send OTP
+      final otpCode = await _otpService.sendOTPForPasswordChange(email);
+      
+      // Show success message with OTP (for testing - remove in production)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('OTP sent to your email. Code: $otpCode (for testing)'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 5),
+        ),
       );
+      
+      // Navigate to verify code screen
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => VerifyCodeScreen(
-            email: _emailPhoneController.text.trim(),
+            email: email,
           ),
         ),
       );
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.message ?? 'Failed to send code'),
+          content: Text('Failed to send code: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );

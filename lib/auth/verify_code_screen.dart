@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
+import '../services/otp_service.dart';
 import 'change_password_screen.dart';
 
 class VerifyCodeScreen extends StatefulWidget {
@@ -15,27 +16,74 @@ class VerifyCodeScreen extends StatefulWidget {
 class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
+  final _otpService = OTPService();
   bool _isLoading = false;
 
-  void _verifyCode() {
+  Future<void> _verifyCode() async {
     if (!_formKey.currentState!.validate()) return;
-    // In a real app, you would verify the code here
-    // For now, we'll just navigate to change password screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ChangePasswordScreen(email: widget.email),
-      ),
-    );
+    setState(() => _isLoading = true);
+    try {
+      final code = _codeController.text.trim();
+      
+      // Verify OTP
+      final isValid = await _otpService.verifyOTP(
+        widget.email,
+        code,
+        'change_password',
+      );
+
+      if (isValid) {
+        // Navigate to change password screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChangePasswordScreen(
+              email: widget.email,
+              otpVerified: true,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Invalid or expired code. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Verification failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  void _resendCode() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Code resent successfully'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  Future<void> _resendCode() async {
+    setState(() => _isLoading = true);
+    try {
+      final otpCode = await _otpService.resendOTP(widget.email);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Code resent successfully. Code: $otpCode (for testing)'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to resend code: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override

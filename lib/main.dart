@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
     final darkGreen = Color(0xFF2E7D32);
 
     return MaterialApp(
-      title: 'Green App Auth',
+      title: 'AGRI GUARD',
       theme: ThemeData(
         primarySwatch: Colors.green,
         primaryColor: darkGreen,

@@ -6,8 +6,9 @@ import 'login_screen.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   final String email;
+  final bool otpVerified;
 
-  ChangePasswordScreen({required this.email});
+  ChangePasswordScreen({required this.email, this.otpVerified = false});
 
   @override
   _ChangePasswordScreenState createState() => _ChangePasswordScreenState();
@@ -21,6 +22,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Future<void> _changePassword() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    // Check if OTP is verified
+    if (!widget.otpVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please verify OTP first'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -35,6 +48,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       // Get the current user
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        // User is logged in, update password directly
         await user.updatePassword(_passwordController.text.trim());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -48,11 +62,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           (route) => false,
         );
       } else {
-        // If no user is logged in, try to sign in and then change password
-        // This is a workaround for password reset flow
+        // User is not logged in, need to sign in first
+        // Try to sign in with email and temporary password, then change
+        // For password reset flow, user should use the email link
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Please use the link sent to your email to reset password'),
+            content: Text('Please login first to change password'),
             backgroundColor: Colors.orange,
           ),
         );
