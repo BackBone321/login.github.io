@@ -9,6 +9,8 @@ import 'messages_screen.dart';
 import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
   @override
   _DashboardScreenState createState() => _DashboardScreenState();
 }
@@ -20,45 +22,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final darkGreen = Color(0xFF2E7D32);
-    final lightBeige = Color(0xFFF5F5DC);
+    final primaryGreen = Color(0xFF2E7D32);
+    final lightGreen = Color(0xFFE8F5E8);
+    final backgroundColor = Color(0xFFF8FFF8);
 
     return Scaffold(
-      backgroundColor: lightBeige,
+      backgroundColor: backgroundColor,
+      appBar: _currentIndex == 0 ? _buildAppBar(primaryGreen) : null,
       body: _getCurrentScreen(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: darkGreen,
-        unselectedItemColor: Colors.grey,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'People',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.eco),
-            label: 'Plant',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: 'Message',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+      bottomNavigationBar: _buildBottomNavigationBar(primaryGreen),
+    );
+  }
+
+  AppBar _buildAppBar(Color primaryGreen) {
+    return AppBar(
+      backgroundColor: primaryGreen,
+      elevation: 0,
+      title: Text(
+        'Dashboard',
+        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
       ),
+      actions: [
+        IconButton(icon: Icon(Icons.notifications_outlined), onPressed: () {}),
+      ],
+    );
+  }
+
+  BottomNavigationBar _buildBottomNavigationBar(Color primaryGreen) {
+    return BottomNavigationBar(
+      currentIndex: _currentIndex,
+      onTap: (index) {
+        setState(() {
+          _currentIndex = index;
+        });
+      },
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: primaryGreen,
+      unselectedItemColor: Colors.grey[500],
+      backgroundColor: Colors.white,
+      elevation: 8,
+      items: [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.people_outline),
+          activeIcon: Icon(Icons.people),
+          label: 'People',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.eco_outlined),
+          activeIcon: Icon(Icons.eco),
+          label: 'Plant',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.message_outlined),
+          activeIcon: Icon(Icons.message),
+          label: 'Message',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline),
+          activeIcon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
     );
   }
 
@@ -80,133 +109,114 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildHomeScreen() {
-    final darkGreen = Color(0xFF2E7D32);
+    final primaryGreen = Color(0xFF2E7D32);
     final user = _auth.currentUser;
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  user?.displayName != null
-                      ? 'Hello, ${user!.displayName}'
-                      : 'Hello, User',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: darkGreen,
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.notifications, color: darkGreen),
-                  onPressed: () {},
-                ),
-              ],
-            ),
-            SizedBox(height: 24),
-            // Weather Detection Card
-            _buildWeatherCard(),
-            SizedBox(height: 16),
-            // Wind Detection Card
-            _buildWindCard(),
-            SizedBox(height: 16),
-            // Announcements Section
-            _buildAnnouncementsSection(),
-            SizedBox(height: 24),
-            // Detections Section
-            Text(
-              'Recent Detections',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: darkGreen,
-              ),
-            ),
-            SizedBox(height: 16),
-            _buildDetectionsList(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeatherCard() {
-    final darkGreen = Color(0xFF2E7D32);
-
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: darkGreen,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.wb_sunny, color: Colors.white, size: 40),
-          SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Weather',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Sunny, 25°C',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-              ],
+          // Welcome Header
+          Text(
+            user?.displayName != null
+                ? 'Hello, ${user!.displayName}!'
+                : 'Hello, User!',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: primaryGreen,
             ),
           ),
+          SizedBox(height: 8),
+          Text(
+            'Welcome back to your dashboard',
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          ),
+          SizedBox(height: 32),
+
+          // Quick Stats Cards
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'Weather',
+                  'Sunny, 25°C',
+                  Icons.wb_sunny,
+                  primaryGreen,
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: _buildStatCard(
+                  'Wind',
+                  '15 km/h NE',
+                  Icons.air,
+                  primaryGreen,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 32),
+
+          // Announcements Section
+          _buildAnnouncementsSection(),
+          SizedBox(height: 32),
+
+          // Recent Detections
+          Text(
+            'Recent Detections',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: primaryGreen,
+            ),
+          ),
+          SizedBox(height: 16),
+          _buildDetectionsList(),
         ],
       ),
     );
   }
 
-  Widget _buildWindCard() {
-    final darkGreen = Color(0xFF2E7D32);
-    final lightGreen = Color(0xFFC8E6C9);
-
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: lightGreen,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: darkGreen, width: 1),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(Icons.air, color: darkGreen, size: 40),
-          SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Wind Detection',
-                  style: TextStyle(
-                    color: darkGreen,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Speed: 15 km/h, Direction: NE',
-                  style: TextStyle(color: darkGreen.withOpacity(0.7), fontSize: 14),
-                ),
-              ],
+          Icon(icon, size: 32, color: color),
+          SizedBox(height: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
           ),
         ],
@@ -215,8 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildAnnouncementsSection() {
-    final darkGreen = Color(0xFF2E7D32);
-    final lightBeige = Color(0xFFE8DCC6);
+    final primaryGreen = Color(0xFF2E7D32);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,7 +238,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: darkGreen,
+                color: primaryGreen,
               ),
             ),
             if (_auth.currentUser != null)
@@ -245,8 +254,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   if (isAdmin) {
                     return TextButton.icon(
                       onPressed: () => _showCreateAnnouncementDialog(),
-                      icon: Icon(Icons.add, color: darkGreen),
-                      label: Text('Add', style: TextStyle(color: darkGreen)),
+                      icon: Icon(Icons.add, color: primaryGreen),
+                      label: Text('Add', style: TextStyle(color: primaryGreen)),
                     );
                   }
                   return SizedBox.shrink();
@@ -254,23 +263,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
           ],
         ),
-        SizedBox(height: 12),
+        SizedBox(height: 16),
         StreamBuilder<List<AnnouncementModel>>(
           stream: _dbService.getAnnouncementsForUser(_auth.currentUser!.uid),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
+              return Center(
+                child: CircularProgressIndicator(color: primaryGreen),
+              );
             }
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return Container(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: lightBeige,
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: primaryGreen.withOpacity(0.1)),
                 ),
-                child: Text(
-                  'No announcements yet',
-                  style: TextStyle(color: darkGreen),
+                child: Center(
+                  child: Text(
+                    'No announcements yet',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
                 ),
               );
             }
@@ -278,10 +292,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: snapshot.data!.map((announcement) {
                 return Container(
                   margin: EdgeInsets.only(bottom: 12),
-                  padding: EdgeInsets.all(16),
+                  padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: lightBeige,
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryGreen.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,22 +311,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         announcement.title,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: darkGreen,
+                          color: primaryGreen,
                           fontSize: 16,
                         ),
                       ),
                       SizedBox(height: 8),
                       Text(
                         announcement.content,
-                        style: TextStyle(color: darkGreen),
+                        style: TextStyle(color: Colors.grey[700]),
                       ),
-                      SizedBox(height: 8),
+                      SizedBox(height: 12),
                       Text(
                         'By ${announcement.userName} • ${_formatDate(announcement.createdAt)}',
-                        style: TextStyle(
-                          color: darkGreen.withOpacity(0.6),
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
                       ),
                     ],
                   ),
@@ -326,23 +344,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
       stream: _dbService.getDetectionsForUser(user.uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return Center(
+            child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
+          );
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Container(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Color(0xFF2E7D32).withOpacity(0.1)),
             ),
-            child: Text(
-              'No detections yet',
-              style: TextStyle(color: Color(0xFF2E7D32)),
+            child: Center(
+              child: Text(
+                'No detections yet',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
             ),
           );
         }
         return Column(
-          children: snapshot.data!.map((detection) {
+          children: snapshot.data!.take(3).map((detection) {
             return _buildDetectionCard(detection);
           }).toList(),
         );
@@ -351,7 +374,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDetectionCard(DetectionModel detection) {
-    final darkGreen = Color(0xFF2E7D32);
+    final primaryGreen = Color(0xFF2E7D32);
     IconData icon;
     String title;
 
@@ -390,18 +413,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: darkGreen.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: primaryGreen.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: darkGreen.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: primaryGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: darkGreen, size: 32),
+            child: Icon(icon, color: primaryGreen, size: 24),
           ),
           SizedBox(width: 16),
           Expanded(
@@ -412,27 +441,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: darkGreen,
-                    fontSize: 16,
+                    color: primaryGreen,
+                    fontSize: 14,
                   ),
                 ),
                 if (detection.description != null) ...[
                   SizedBox(height: 4),
                   Text(
                     detection.description!,
-                    style: TextStyle(
-                      color: darkGreen.withOpacity(0.7),
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                 ],
                 SizedBox(height: 4),
                 Text(
                   _formatDate(detection.detectedAt),
-                  style: TextStyle(
-                    color: darkGreen.withOpacity(0.5),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
                 ),
               ],
             ),
@@ -443,143 +466,257 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildPlantScreen() {
-    final darkGreen = Color(0xFF2E7D32);
-    final lightBeige = Color(0xFFF5F5DC);
+    final primaryGreen = Color(0xFF2E7D32);
     final user = _auth.currentUser;
     if (user == null) return Center(child: Text('Please login'));
 
     return Scaffold(
-      backgroundColor: lightBeige,
+      backgroundColor: Color(0xFFF8FFF8),
       appBar: AppBar(
-        title: Text('Detections'),
-        backgroundColor: darkGreen,
-        foregroundColor: Colors.white,
+        backgroundColor: primaryGreen,
+        elevation: 0,
+        title: Text(
+          'Detections',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: StreamBuilder<List<DetectionModel>>(
-          stream: _dbService.getDetectionsForUser(user.uid),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.eco, size: 64, color: darkGreen.withOpacity(0.5)),
-                    SizedBox(height: 16),
-                    Text(
-                      'No detections yet',
-                      style: TextStyle(color: darkGreen, fontSize: 18),
-                    ),
-                  ],
-                ),
-              );
-            }
+        padding: EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Detection Categories Header
+            Text(
+              'Detection Categories',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: primaryGreen,
+              ),
+            ),
+            SizedBox(height: 20),
 
-            final detections = snapshot.data!;
-            
-            // Filter detections by type
-            final plantHealthDetections = detections.where((d) => d.type == 'plant_health' || d.type == 'health_plant').toList();
-            final mammalDetections = detections.where((d) => d.type == 'cow' || d.type == 'mammal' || d.type == 'mammals').toList();
-            final pestDetections = detections.where((d) => d.type == 'insect' || d.type == 'pest').toList();
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // Detection Icon Buttons Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Pest Detection Section
-                _buildSectionHeader('Pest Detection', Icons.bug_report, darkGreen),
-                SizedBox(height: 12),
-                if (pestDetections.isEmpty)
-                  _buildEmptySection('No pest detections')
-                else
-                  ...pestDetections.map((detection) => _buildDetectionCard(detection)).toList(),
-                SizedBox(height: 24),
-                
-                // Plant Health Detection Section
-                _buildSectionHeader('Plant Health Detection', Icons.local_florist, darkGreen),
-                SizedBox(height: 12),
-                if (plantHealthDetections.isEmpty)
-                  _buildEmptySection('No plant health detections')
-                else
-                  ...plantHealthDetections.map((detection) => _buildDetectionCard(detection)).toList(),
-                SizedBox(height: 24),
-                
-                // Mammals Detection Section
-                _buildSectionHeader('Mammals Detection', Icons.pets, darkGreen),
-                SizedBox(height: 12),
-                if (mammalDetections.isEmpty)
-                  _buildEmptySection('No mammal detections')
-                else
-                  ...mammalDetections.map((detection) => _buildDetectionCard(detection)).toList(),
+                _buildDetectionIconButton(
+                  'Animals',
+                  Icons.pets,
+                  primaryGreen,
+                  () => _showDetectionCategory('animals'),
+                ),
+                _buildDetectionIconButton(
+                  'Insects',
+                  Icons.bug_report,
+                  primaryGreen,
+                  () => _showDetectionCategory('insects'),
+                ),
+                _buildDetectionIconButton(
+                  'Plant Health',
+                  Icons.local_florist,
+                  primaryGreen,
+                  () => _showDetectionCategory('plant_health'),
+                ),
               ],
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon, Color color) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(8),
+  Widget _buildDetectionIconButton(String title, IconData icon, Color color, VoidCallback onPressed) {
+    return Column(
+      children: [
+        IconButton(
+          onPressed: onPressed,
+          icon: Container(
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          SizedBox(width: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+            child: Icon(
+              icon,
+              size: 32,
               color: color,
             ),
           ),
-        ],
-      ),
+          iconSize: 80,
+          padding: EdgeInsets.zero,
+        ),
+        SizedBox(height: 8),
+        Text(
+          title,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildEmptySection(String message) {
-    final darkGreen = Color(0xFF2E7D32);
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: darkGreen.withOpacity(0.2)),
+  void _showDetectionCategory(String category) {
+    final primaryGreen = Color(0xFF2E7D32);
+    final user = _auth.currentUser;
+    
+    if (user == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Center(
-        child: Text(
-          message,
-          style: TextStyle(
-            color: darkGreen.withOpacity(0.6),
-            fontSize: 14,
-            fontStyle: FontStyle.italic,
+      builder: (context) {
+        String title;
+        IconData icon;
+        List<String> types;
+
+        switch (category) {
+          case 'animals':
+            title = 'Animal Detections';
+            icon = Icons.pets;
+            types = ['cow', 'mammal', 'mammals'];
+            break;
+          case 'insects':
+            title = 'Insect Detections';
+            icon = Icons.bug_report;
+            types = ['insect', 'pest'];
+            break;
+          case 'plant_health':
+            title = 'Plant Health Detections';
+            icon = Icons.local_florist;
+            types = ['plant_health', 'health_plant'];
+            break;
+          default:
+            title = 'Detections';
+            icon = Icons.notifications;
+            types = [];
+        }
+
+        return Container(
+          padding: EdgeInsets.all(20),
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Column(
+            children: [
+              // Header
+              Row(
+                children: [
+                  Icon(icon, color: primaryGreen, size: 28),
+                  SizedBox(width: 12),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: primaryGreen,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              Divider(),
+
+              // Detections List
+              Expanded(
+                child: StreamBuilder<List<DetectionModel>>(
+                  stream: _dbService.getDetectionsForUser(user.uid),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: CircularProgressIndicator(color: primaryGreen),
+                      );
+                    }
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              icon,
+                              size: 48,
+                              color: primaryGreen.withOpacity(0.3),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'No detections found',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final filteredDetections = snapshot.data!
+                        .where((detection) => types.contains(detection.type))
+                        .toList();
+
+                    if (filteredDetections.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              icon,
+                              size: 48,
+                              color: primaryGreen.withOpacity(0.3),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'No $category detections',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: filteredDetections.length,
+                      itemBuilder: (context, index) {
+                        return _buildDetectionCard(filteredDetections[index]);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   void _showCreateAnnouncementDialog() {
     final titleController = TextEditingController();
     final contentController = TextEditingController();
-    final darkGreen = Color(0xFF2E7D32);
+    final primaryGreen = Color(0xFF2E7D32);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Create Announcement', style: TextStyle(color: darkGreen)),
+        title: Text(
+          'Create Announcement',
+          style: TextStyle(color: primaryGreen),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -623,7 +760,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Navigator.pop(context);
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: darkGreen),
+            style: ElevatedButton.styleFrom(backgroundColor: primaryGreen),
             child: Text('Create', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -635,4 +772,3 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return '${date.month}/${date.day}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}';
   }
 }
-

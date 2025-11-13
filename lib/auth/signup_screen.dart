@@ -7,6 +7,8 @@ import '../models/user_model.dart';
 import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
+
   @override
   _SignupScreenState createState() => _SignupScreenState();
 }
@@ -33,25 +35,28 @@ class _SignupScreenState extends State<SignupScreen> {
     }
     setState(() => _isLoading = true);
     try {
-      UserCredential user = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      UserCredential user = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
       await user.user?.updateDisplayName(_nameController.text.trim());
-      
+
       // Create user in Firestore
       final dbService = DatabaseService();
-      await dbService.createUser(UserModel(
-        uid: user.user!.uid,
-        email: user.user!.email!,
-        displayName: _nameController.text.trim(),
-        isAdmin: false,
-        createdAt: DateTime.now(),
-      ));
-      
+      await dbService.createUser(
+        UserModel(
+          uid: user.user!.uid,
+          email: user.user!.email!,
+          displayName: _nameController.text.trim(),
+          isAdmin: false,
+          createdAt: DateTime.now(),
+        ),
+      );
+
       // Sign out the user so they need to login
       await FirebaseAuth.instance.signOut();
-      
+
       // Show success message and navigate to login
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -59,7 +64,7 @@ class _SignupScreenState extends State<SignupScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      
+
       // Navigate to login screen
       Navigator.pushReplacement(
         context,
@@ -79,136 +84,150 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final darkGreen = Color(0xFF2E7D32);
-    final lightGreen = Color(0xFFC8E6C9);
-    final lightBeige = Color(0xFFF5F5DC);
+    final primaryGreen = Color(0xFF2E7D32);
+    final lightGreen = Color(0xFFE8F5E8);
+    final accentGreen = Color(0xFF4CAF50);
 
     return Scaffold(
-      backgroundColor: lightBeige,
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: primaryGreen),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Create Account',
+          style: TextStyle(
+            color: primaryGreen,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
+      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header Image (Greenhouse)
-            Container(
-              height: 180,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF81C784),
-                    Color(0xFF66BB6A),
-                  ],
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: GreenhousePainter(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Logo
-            Transform.translate(
-              offset: Offset(0, -40),
-              child: Container(
-                width: 80,
-                height: 80,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              SizedBox(height: 20),
+
+              // Simple Logo Section
+              Container(
+                padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: lightGreen,
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
                 ),
-                child: Icon(
-                  Icons.eco,
-                  size: 50,
-                  color: darkGreen,
+                child: Icon(Icons.eco, size: 60, color: primaryGreen),
+              ),
+              SizedBox(height: 32),
+
+              // Title
+              Text(
+                'Join Us',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: primaryGreen,
                 ),
               ),
-            ),
-            SizedBox(height: 20),
-            // Content Box
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
-                  padding: EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: lightGreen,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+              SizedBox(height: 8),
+              Text(
+                'Create your account to get started',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 48),
+
+              // Signup Form
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    CustomTextField(
+                      controller: _nameController,
+                      label: 'Full Name',
+                      validator: (val) => val!.isEmpty ? 'Name is required' : null,
+                      icon: Icons.person,
+                    ),
+                    SizedBox(height: 16),
+                    CustomTextField(
+                      controller: _emailController,
+                      label: 'Email Address',
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (val) => val!.isEmpty ? 'Email is required' : null,
+                      icon: Icons.email,
+                    ),
+                    SizedBox(height: 16),
+                    CustomTextField(
+                      controller: _phoneController,
+                      label: 'Phone Number',
+                      keyboardType: TextInputType.phone,
+                      validator: (val) => val!.isEmpty ? 'Phone number is required' : null,
+                      icon: Icons.phone,
+                    ),
+                    SizedBox(height: 16),
+                    CustomTextField(
+                      controller: _passwordController,
+                      label: 'Password',
+                      obscureText: true,
+                      showPasswordToggle: true,
+                      validator: (val) =>
+                          val!.length < 6 ? 'Password must be at least 6 characters' : null,
+                      icon: Icons.lock,
+                    ),
+                    SizedBox(height: 16),
+                    CustomTextField(
+                      controller: _confirmPasswordController,
+                      label: 'Confirm Password',
+                      obscureText: true,
+                      showPasswordToggle: true,
+                      validator: (val) => val!.isEmpty ? 'Please confirm your password' : null,
+                      icon: Icons.lock,
+                    ),
+                    SizedBox(height: 32),
+
+                    // Create Account Button
+                    CustomButton(
+                      text: 'Create Account',
+                      onPressed: _isLoading ? null : _signup,
+                      isLoading: _isLoading,
+                      isPrimary: true,
+                    ),
+                    SizedBox(height: 24),
+
+                    // Divider
+                    Row(
                       children: [
-                        CustomTextField(
-                          controller: _nameController,
-                          label: 'Enter your name',
-                          icon: Icons.person,
-                          validator: (val) => val!.isEmpty ? 'Required' : null,
+                        Expanded(child: Divider(color: Colors.grey[300])),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'or',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
                         ),
-                        SizedBox(height: 16),
-                        CustomTextField(
-                          controller: _emailController,
-                          label: 'Email',
-                          icon: Icons.email,
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (val) => val!.isEmpty ? 'Required' : null,
-                        ),
-                        SizedBox(height: 16),
-                        CustomTextField(
-                          controller: _phoneController,
-                          label: 'Phone Number',
-                          icon: Icons.phone,
-                          keyboardType: TextInputType.phone,
-                          validator: (val) => val!.isEmpty ? 'Required' : null,
-                        ),
-                        SizedBox(height: 16),
-                        CustomTextField(
-                          controller: _passwordController,
-                          label: 'Enter password',
-                          icon: Icons.lock,
-                          obscureText: true,
-                          validator: (val) => val!.length < 6 ? 'At least 6 characters' : null,
-                        ),
-                        SizedBox(height: 16),
-                        CustomTextField(
-                          controller: _confirmPasswordController,
-                          label: 'Confirm password',
-                          icon: Icons.lock,
-                          obscureText: true,
-                          validator: (val) => val!.isEmpty ? 'Required' : null,
-                        ),
-                        SizedBox(height: 24),
-                        CustomButton(
-                          text: 'Create account',
-                          onPressed: _isLoading ? null : _signup,
-                          isLoading: _isLoading,
-                          isPrimary: false,
-                        ),
+                        Expanded(child: Divider(color: Colors.grey[300])),
                       ],
                     ),
-                  ),
+                    SizedBox(height: 24),
+
+                    // Sign In Button
+                    CustomButton(
+                      text: 'Already have an account? Sign In',
+                      onPressed: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => LoginScreen()),
+                      ),
+                      isPrimary: false,
+                    ),
+                    SizedBox(height: 32),
+                  ],
                 ),
               ),
-            ),
-            // Footer Wave
-            CustomPaint(
-              size: Size(double.infinity, 80),
-              painter: WavePainter(darkGreen),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -223,78 +242,4 @@ class _SignupScreenState extends State<SignupScreen> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
-}
-
-// Custom painter for greenhouse pattern
-class GreenhousePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.2)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    for (int i = 0; i < 5; i++) {
-      final path = Path();
-      path.moveTo(i * size.width / 4, size.height);
-      path.quadraticBezierTo(
-        i * size.width / 4 + size.width / 8,
-        size.height * 0.3,
-        (i + 1) * size.width / 4,
-        size.height,
-      );
-      canvas.drawPath(path, paint);
-    }
-
-    for (int i = 0; i < 3; i++) {
-      final y = size.height * 0.6 + i * 30.0;
-      for (int j = 0; j < 8; j++) {
-        canvas.drawCircle(
-          Offset(j * size.width / 7 + 20, y),
-          8,
-          Paint()..color = Colors.white.withOpacity(0.3),
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// Custom painter for wave footer
-class WavePainter extends CustomPainter {
-  final Color color;
-
-  WavePainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    path.moveTo(0, size.height * 0.5);
-    path.quadraticBezierTo(
-      size.width * 0.25,
-      size.height * 0.2,
-      size.width * 0.5,
-      size.height * 0.5,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.75,
-      size.height * 0.8,
-      size.width,
-      size.height * 0.5,
-    );
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

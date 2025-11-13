@@ -5,6 +5,8 @@ import '../models/message_model.dart';
 import '../models/user_model.dart';
 
 class MessagesScreen extends StatefulWidget {
+  const MessagesScreen({super.key});
+
   @override
   _MessagesScreenState createState() => _MessagesScreenState();
 }
@@ -90,7 +92,11 @@ class _MessagesScreenState extends State<MessagesScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.message, size: 64, color: darkGreen.withOpacity(0.5)),
+                        Icon(
+                          Icons.message,
+                          size: 64,
+                          color: darkGreen.withOpacity(0.5),
+                        ),
                         SizedBox(height: 16),
                         Text(
                           'No messages yet',
@@ -131,9 +137,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => ChatScreen(otherUser: user),
-          ),
+          MaterialPageRoute(builder: (_) => ChatScreen(otherUser: user)),
         );
       },
       child: Container(
@@ -150,10 +154,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
               width: 60,
               child: Text(
                 user.displayName ?? user.email,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: darkGreen,
-                ),
+                style: TextStyle(fontSize: 12, color: darkGreen),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -180,9 +181,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => ChatScreen(otherUser: user),
-              ),
+              MaterialPageRoute(builder: (_) => ChatScreen(otherUser: user)),
             );
           },
           child: Container(
@@ -238,7 +237,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
 class ChatScreen extends StatefulWidget {
   final UserModel otherUser;
 
-  ChatScreen({required this.otherUser});
+  const ChatScreen({super.key, required this.otherUser});
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -266,7 +265,10 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           Expanded(
             child: StreamBuilder<List<MessageModel>>(
-              stream: _dbService.getMessages(currentUserId, widget.otherUser.uid),
+              stream: _dbService.getMessages(
+                currentUserId,
+                widget.otherUser.uid,
+              ),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
@@ -335,7 +337,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           id: DateTime.now().millisecondsSinceEpoch.toString(),
                           senderId: currentUserId,
                           receiverId: widget.otherUser.uid,
-                          senderName: _auth.currentUser!.displayName ??
+                          senderName:
+                              _auth.currentUser!.displayName ??
                               _auth.currentUser!.email ??
                               'User',
                           content: _messageController.text,
@@ -368,7 +371,9 @@ class _ChatScreenState extends State<ChatScreen> {
           color: isMe ? darkGreen : lightGreen,
           borderRadius: BorderRadius.circular(16),
         ),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.7,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -409,4 +414,3 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 }
-

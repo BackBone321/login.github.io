@@ -6,6 +6,8 @@ import '../services/otp_service.dart';
 import 'verify_code_screen.dart';
 
 class PasswordRecoveryScreen extends StatefulWidget {
+  const PasswordRecoveryScreen({super.key});
+
   @override
   _PasswordRecoveryScreenState createState() => _PasswordRecoveryScreenState();
 }
@@ -21,10 +23,10 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
     setState(() => _isLoading = true);
     try {
       final email = _emailPhoneController.text.trim();
-      
+
       // Generate and send OTP
       final otpCode = await _otpService.sendOTPForPasswordChange(email);
-      
+
       // Show success message with OTP (for testing - remove in production)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -33,15 +35,11 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
           duration: Duration(seconds: 5),
         ),
       );
-      
+
       // Navigate to verify code screen
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => VerifyCodeScreen(
-            email: email,
-          ),
-        ),
+        MaterialPageRoute(builder: (_) => VerifyCodeScreen(email: email)),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,113 +55,102 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final darkGreen = Color(0xFF2E7D32);
-    final lightGreen = Color(0xFFC8E6C9);
-    final lightBeige = Color(0xFFF5F5DC);
+    final primaryGreen = Color(0xFF2E7D32);
+    final lightGreen = Color(0xFFE8F5E8);
+    final accentGreen = Color(0xFF4CAF50);
 
     return Scaffold(
-      backgroundColor: lightBeige,
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: primaryGreen),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Password Recovery',
+          style: TextStyle(
+            color: primaryGreen,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
+      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header Image (Greenhouse)
-            Container(
-              height: 180,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF81C784),
-                    Color(0xFF66BB6A),
-                  ],
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: GreenhousePainter(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Logo
-            Transform.translate(
-              offset: Offset(0, -40),
-              child: Container(
-                width: 80,
-                height: 80,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Simple Logo Section
+              Container(
+                padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: lightGreen,
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
+                ),
+                child: Icon(Icons.lock_reset_rounded, size: 60, color: primaryGreen),
+              ),
+              SizedBox(height: 32),
+
+              // Title
+              Text(
+                'Forgot Password?',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: primaryGreen,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Enter your email and we\'ll send you a code to reset your password',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 48),
+
+              // Recovery Form
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    CustomTextField(
+                      controller: _emailPhoneController,
+                      label: 'Email Address',
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (val) => val!.isEmpty ? 'Email is required' : null,
+                      icon: Icons.email,
+                    ),
+                    SizedBox(height: 32),
+
+                    // Send Code Button - Now using same design as login button
+                    CustomButton(
+                      text: 'Send Recovery Code',
+                      onPressed: _isLoading ? null : _sendCode,
+                      isLoading: _isLoading,
+                      isPrimary: true,
+                    ),
+                    SizedBox(height: 24),
+
+                    // Back to Login
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        'Back to Login',
+                        style: TextStyle(
+                          color: primaryGreen,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.eco,
-                  size: 50,
-                  color: darkGreen,
-                ),
               ),
-            ),
-            SizedBox(height: 20),
-            // Content Box
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
-                  padding: EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: lightGreen,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Recovery password',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: darkGreen,
-                          ),
-                        ),
-                        SizedBox(height: 24),
-                        CustomTextField(
-                          controller: _emailPhoneController,
-                          label: 'Email or mobile number',
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (val) => val!.isEmpty ? 'Required' : null,
-                        ),
-                        SizedBox(height: 24),
-                        CustomButton(
-                          text: 'Send code',
-                          onPressed: _isLoading ? null : _sendCode,
-                          isLoading: _isLoading,
-                          isPrimary: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Footer Wave
-            CustomPaint(
-              size: Size(double.infinity, 80),
-              painter: WavePainter(darkGreen),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -175,78 +162,3 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
     super.dispose();
   }
 }
-
-// Custom painter for greenhouse pattern
-class GreenhousePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.2)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    for (int i = 0; i < 5; i++) {
-      final path = Path();
-      path.moveTo(i * size.width / 4, size.height);
-      path.quadraticBezierTo(
-        i * size.width / 4 + size.width / 8,
-        size.height * 0.3,
-        (i + 1) * size.width / 4,
-        size.height,
-      );
-      canvas.drawPath(path, paint);
-    }
-
-    for (int i = 0; i < 3; i++) {
-      final y = size.height * 0.6 + i * 30.0;
-      for (int j = 0; j < 8; j++) {
-        canvas.drawCircle(
-          Offset(j * size.width / 7 + 20, y),
-          8,
-          Paint()..color = Colors.white.withOpacity(0.3),
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// Custom painter for wave footer
-class WavePainter extends CustomPainter {
-  final Color color;
-
-  WavePainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    path.moveTo(0, size.height * 0.5);
-    path.quadraticBezierTo(
-      size.width * 0.25,
-      size.height * 0.2,
-      size.width * 0.5,
-      size.height * 0.5,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.75,
-      size.height * 0.8,
-      size.width,
-      size.height * 0.5,
-    );
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-

@@ -8,7 +8,11 @@ class ChangePasswordScreen extends StatefulWidget {
   final String email;
   final bool otpVerified;
 
-  ChangePasswordScreen({required this.email, this.otpVerified = false});
+  const ChangePasswordScreen({
+    super.key,
+    required this.email,
+    this.otpVerified = false,
+  });
 
   @override
   _ChangePasswordScreenState createState() => _ChangePasswordScreenState();
@@ -22,7 +26,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Future<void> _changePassword() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Check if OTP is verified
     if (!widget.otpVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -33,7 +37,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       );
       return;
     }
-    
+
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -103,18 +107,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF81C784),
-                    Color(0xFF66BB6A),
-                  ],
+                  colors: [Color(0xFF81C784), Color(0xFF66BB6A)],
                 ),
               ),
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: CustomPaint(
-                      painter: GreenhousePainter(),
-                    ),
+                    child: CustomPaint(painter: GreenhousePainter()),
                   ),
                 ],
               ),
@@ -136,11 +135,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.eco,
-                  size: 50,
-                  color: darkGreen,
-                ),
+                child: Icon(Icons.eco, size: 50, color: darkGreen),
               ),
             ),
             SizedBox(height: 20),
@@ -173,7 +168,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           label: 'password',
                           obscureText: true,
                           icon: Icons.lock,
-                          validator: (val) => val!.length < 6 ? 'At least 6 characters' : null,
+                          validator: (val) =>
+                              val!.length < 6 ? 'At least 6 characters' : null,
                         ),
                         SizedBox(height: 16),
                         CustomTextField(
@@ -288,4 +284,3 @@ class WavePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
