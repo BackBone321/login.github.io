@@ -90,7 +90,11 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                   color: lightGreen,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.lock_reset_rounded, size: 60, color: primaryGreen),
+                child: Icon(
+                  Icons.lock_reset_rounded,
+                  size: 60,
+                  color: primaryGreen,
+                ),
               ),
               SizedBox(height: 32),
 
@@ -120,7 +124,8 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                       controller: _emailPhoneController,
                       label: 'Email Address',
                       keyboardType: TextInputType.emailAddress,
-                      validator: (val) => val!.isEmpty ? 'Email is required' : null,
+                      validator: (val) =>
+                          val!.isEmpty ? 'Email is required' : null,
                       icon: Icons.email,
                     ),
                     SizedBox(height: 32),

@@ -123,7 +123,11 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                   color: lightGreen,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.verified_user_rounded, size: 60, color: primaryGreen),
+                child: Icon(
+                  Icons.verified_user_rounded,
+                  size: 60,
+                  color: primaryGreen,
+                ),
               ),
               SizedBox(height: 32),
 
@@ -163,7 +167,8 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                       controller: _codeController,
                       label: 'Verification Code',
                       keyboardType: TextInputType.number,
-                      validator: (val) => val!.isEmpty ? 'Code is required' : null,
+                      validator: (val) =>
+                          val!.isEmpty ? 'Code is required' : null,
                       icon: Icons.lock_outline,
                     ),
                     SizedBox(height: 32),

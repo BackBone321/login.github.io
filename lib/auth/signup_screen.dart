@@ -148,7 +148,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     CustomTextField(
                       controller: _nameController,
                       label: 'Full Name',
-                      validator: (val) => val!.isEmpty ? 'Name is required' : null,
+                      validator: (val) =>
+                          val!.isEmpty ? 'Name is required' : null,
                       icon: Icons.person,
                     ),
                     SizedBox(height: 16),
@@ -156,7 +157,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       controller: _emailController,
                       label: 'Email Address',
                       keyboardType: TextInputType.emailAddress,
-                      validator: (val) => val!.isEmpty ? 'Email is required' : null,
+                      validator: (val) =>
+                          val!.isEmpty ? 'Email is required' : null,
                       icon: Icons.email,
                     ),
                     SizedBox(height: 16),
@@ -164,7 +166,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       controller: _phoneController,
                       label: 'Phone Number',
                       keyboardType: TextInputType.phone,
-                      validator: (val) => val!.isEmpty ? 'Phone number is required' : null,
+                      validator: (val) =>
+                          val!.isEmpty ? 'Phone number is required' : null,
                       icon: Icons.phone,
                     ),
                     SizedBox(height: 16),
@@ -173,8 +176,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       label: 'Password',
                       obscureText: true,
                       showPasswordToggle: true,
-                      validator: (val) =>
-                          val!.length < 6 ? 'Password must be at least 6 characters' : null,
+                      validator: (val) => val!.length < 6
+                          ? 'Password must be at least 6 characters'
+                          : null,
                       icon: Icons.lock,
                     ),
                     SizedBox(height: 16),
@@ -183,7 +187,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       label: 'Confirm Password',
                       obscureText: true,
                       showPasswordToggle: true,
-                      validator: (val) => val!.isEmpty ? 'Please confirm your password' : null,
+                      validator: (val) =>
+                          val!.isEmpty ? 'Please confirm your password' : null,
                       icon: Icons.lock,
                     ),
                     SizedBox(height: 32),

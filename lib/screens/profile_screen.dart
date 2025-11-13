@@ -85,7 +85,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     image: DecorationImage(
-                      image: AssetImage('assets/images/farm_header.jpg'), // Add farm image to assets
+                      image: AssetImage(
+                        'assets/images/farm_header.jpg',
+                      ), // Add farm image to assets
                       fit: BoxFit.cover,
                       colorFilter: ColorFilter.mode(
                         primaryGreen.withOpacity(0.3),
@@ -176,14 +178,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               decoration: InputDecoration(
                                 labelText: 'Full Name',
                                 labelStyle: TextStyle(color: primaryGreen),
-                                prefixIcon: Icon(Icons.person, color: primaryGreen),
+                                prefixIcon: Icon(
+                                  Icons.person,
+                                  color: primaryGreen,
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: primaryGreen),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: primaryGreen.withOpacity(0.3)),
+                                  borderSide: BorderSide(
+                                    color: primaryGreen.withOpacity(0.3),
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -194,7 +201,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : Column(
                               children: [
                                 Text(
-                                  userModel?.displayName ?? user.email ?? 'Farmer',
+                                  userModel?.displayName ??
+                                      user.email ??
+                                      'Farmer',
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
@@ -217,7 +226,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       // Email Display
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: lightGreen,
                           borderRadius: BorderRadius.circular(12),
@@ -248,14 +260,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               decoration: InputDecoration(
                                 labelText: 'About Your Farm',
                                 labelStyle: TextStyle(color: primaryGreen),
-                                prefixIcon: Icon(Icons.info, color: primaryGreen),
+                                prefixIcon: Icon(
+                                  Icons.info,
+                                  color: primaryGreen,
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: primaryGreen),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: primaryGreen.withOpacity(0.3)),
+                                  borderSide: BorderSide(
+                                    color: primaryGreen.withOpacity(0.3),
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -265,37 +282,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               maxLines: 3,
                             )
                           : userModel?.bio != null && userModel!.bio!.isNotEmpty
-                              ? Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: lightGreen,
-                                    borderRadius: BorderRadius.circular(12),
+                          ? Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: lightGreen,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'About My Farm',
+                                    style: TextStyle(
+                                      color: primaryGreen,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'About My Farm',
-                                        style: TextStyle(
-                                          color: primaryGreen,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        userModel.bio!,
-                                        style: TextStyle(
-                                          color: Colors.grey[700],
-                                          fontSize: 16,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ],
+                                  SizedBox(height: 8),
+                                  Text(
+                                    userModel.bio!,
+                                    style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontSize: 16,
+                                      height: 1.4,
+                                    ),
                                   ),
-                                )
-                              : SizedBox.shrink(),
+                                ],
+                              ),
+                            )
+                          : SizedBox.shrink(),
                     ],
                   ),
                 ),
@@ -349,11 +366,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (context) => AlertDialog(
-                              title: Text('Logout', style: TextStyle(color: primaryGreen)),
+                              title: Text(
+                                'Logout',
+                                style: TextStyle(color: primaryGreen),
+                              ),
                               content: Text('Are you sure you want to logout?'),
                               actions: [
                                 TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
                                   child: Text('Cancel'),
                                 ),
                                 ElevatedButton(
@@ -411,22 +432,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       title: Text(
         title,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: primaryGreen,
-        ),
+        style: TextStyle(fontWeight: FontWeight.w600, color: primaryGreen),
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          color: Colors.grey[600],
-          fontSize: 12,
-        ),
+        style: TextStyle(color: Colors.grey[600], fontSize: 12),
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: primaryGreen.withOpacity(0.5),
-      ),
+      trailing: Icon(Icons.chevron_right, color: primaryGreen.withOpacity(0.5)),
       onTap: onTap,
     );
   }

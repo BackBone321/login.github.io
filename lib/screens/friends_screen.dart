@@ -147,10 +147,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           SizedBox(height: 8),
           Text(
             'Find and connect with people',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 16,
-            ),
+            style: TextStyle(color: Colors.grey[600], fontSize: 16),
           ),
           SizedBox(height: 24),
           ElevatedButton.icon(
@@ -215,10 +212,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     if (user.email != null)
                       Text(
                         user.email!,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     if (user.bio != null && user.bio!.isNotEmpty) ...[
                       SizedBox(height: 8),
@@ -245,7 +239,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => ChatScreen(otherUser: user)),
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(otherUser: user),
+                        ),
                       );
                     },
                     tooltip: 'Send Message',
@@ -276,7 +272,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           children: [
                             Icon(Icons.person_remove, color: Colors.red),
                             SizedBox(width: 8),
-                            Text('Unfriend', style: TextStyle(color: Colors.red)),
+                            Text(
+                              'Unfriend',
+                              style: TextStyle(color: Colors.red),
+                            ),
                           ],
                         ),
                       ),
@@ -297,16 +296,17 @@ class _FriendsScreenState extends State<FriendsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Find Friends',
-          style: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color(0xFF2E7D32),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: TextField(
           controller: _searchController,
           decoration: InputDecoration(
             hintText: 'Search by name or email',
             prefixIcon: Icon(Icons.search, color: Color(0xFF2E7D32)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           autofocus: true,
         ),
@@ -335,7 +335,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   void _performSearch() {
     final primaryGreen = Color(0xFF2E7D32);
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -348,17 +348,24 @@ class _FriendsScreenState extends State<FriendsScreen> {
             future: _dbService.searchUsers(_searchController.text),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator(color: primaryGreen));
+                return Center(
+                  child: CircularProgressIndicator(color: primaryGreen),
+                );
               }
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
                 return Center(
-                  child: Text('No users found', style: TextStyle(color: primaryGreen)),
+                  child: Text(
+                    'No users found',
+                    style: TextStyle(color: primaryGreen),
+                  ),
                 );
               }
-              
+
               final currentUserId = _auth.currentUser!.uid;
-              final users = snapshot.data!.where((user) => user.uid != currentUserId).toList();
-              
+              final users = snapshot.data!
+                  .where((user) => user.uid != currentUserId)
+                  .toList();
+
               return ListView.builder(
                 padding: EdgeInsets.all(16),
                 itemCount: users.length,
@@ -407,10 +414,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 if (user.bio != null && user.bio!.isNotEmpty)
                   Text(
                     user.bio!,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -492,7 +496,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     future: _dbService.getUser(request.userId),
                     builder: (context, userSnapshot) {
                       if (!userSnapshot.hasData) return SizedBox.shrink();
-                      return _buildFriendRequestCard(userSnapshot.data!, request);
+                      return _buildFriendRequestCard(
+                        userSnapshot.data!,
+                        request,
+                      );
                     },
                   );
                 }).toList(),
@@ -538,10 +545,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 if (user.bio != null && user.bio!.isNotEmpty)
                   Text(
                     user.bio!,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -622,11 +626,20 @@ class _FriendsScreenState extends State<FriendsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (user.email != null) ...[
-              Text('Email: ${user.email}', style: TextStyle(color: Colors.grey[700])),
+              Text(
+                'Email: ${user.email}',
+                style: TextStyle(color: Colors.grey[700]),
+              ),
               SizedBox(height: 8),
             ],
             if (user.bio != null && user.bio!.isNotEmpty) ...[
-              Text('Bio:', style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500)),
+              Text(
+                'Bio:',
+                style: TextStyle(
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               SizedBox(height: 4),
               Text(user.bio!, style: TextStyle(color: Colors.grey[600])),
             ],

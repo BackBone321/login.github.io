@@ -526,7 +526,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildDetectionIconButton(String title, IconData icon, Color color, VoidCallback onPressed) {
+  Widget _buildDetectionIconButton(
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
     return Column(
       children: [
         IconButton(
@@ -545,11 +550,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-            child: Icon(
-              icon,
-              size: 32,
-              color: color,
-            ),
+            child: Icon(icon, size: 32, color: color),
           ),
           iconSize: 80,
           padding: EdgeInsets.zero,
@@ -570,7 +571,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _showDetectionCategory(String category) {
     final primaryGreen = Color(0xFF2E7D32);
     final user = _auth.currentUser;
-    
+
     if (user == null) return;
 
     showModalBottomSheet(

@@ -118,7 +118,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _emailPhoneController,
                       label: 'Email Address',
                       keyboardType: TextInputType.emailAddress,
-                      validator: (val) => val!.isEmpty ? 'Email is required' : null,
+                      validator: (val) =>
+                          val!.isEmpty ? 'Email is required' : null,
                       icon: Icons.email,
                     ),
                     SizedBox(height: 16),
@@ -127,7 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       label: 'Password',
                       obscureText: true,
                       showPasswordToggle: true,
-                      validator: (val) => val!.isEmpty ? 'Password is required' : null,
+                      validator: (val) =>
+                          val!.isEmpty ? 'Password is required' : null,
                       icon: Icons.lock,
                     ),
                     SizedBox(height: 12),
