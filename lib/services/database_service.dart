@@ -6,6 +6,8 @@ import '../models/friend_model.dart';
 import '../models/announcement_model.dart';
 import '../models/detection_model.dart';
 import '../models/message_model.dart';
+import '../models/group_model.dart';
+import '../models/group_message_model.dart';
 
 class DatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -318,4 +320,74 @@ class DatabaseService {
       return name.contains(query.toLowerCase());
     }).toList();
   }
+
+  // ===== GROUP METHODS - ADD THESE HERE =====
+
+  // Group Management Methods
+  Future<void> createGroup(GroupModel group) async {
+    await _firestore.collection('groups').doc(group.id).set(group.toMap());
+  }
+
+  Stream<List<GroupModel>> getUserGroups(String userId) {
+    return _firestore
+        .collection('groups')
+        .where('memberIds', arrayContains: userId)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => GroupModel.fromMap(doc.data()))
+              .toList(),
+        );
+  }
+
+  Future<void> updateGroup(
+    String groupId, {
+    String? name,
+    String? description,
+  }) async {
+    final updates = <String, dynamic>{};
+    if (name != null) updates['name'] = name;
+    if (description != null) updates['description'] = description;
+
+    await _firestore.collection('groups').doc(groupId).update(updates);
+  }
+
+  Future<void> removeGroupMember(String groupId, String memberId) async {
+    await _firestore.collection('groups').doc(groupId).update({
+      'memberIds': FieldValue.arrayRemove([memberId]),
+      'adminIds': FieldValue.arrayRemove([memberId]),
+    });
+  }
+
+  Future<void> addGroupAdmin(String groupId, String adminId) async {
+    await _firestore.collection('groups').doc(groupId).update({
+      'adminIds': FieldValue.arrayUnion([adminId]),
+    });
+  }
+
+  Future<void> removeGroupAdmin(String groupId, String adminId) async {
+    await _firestore.collection('groups').doc(groupId).update({
+      'adminIds': FieldValue.arrayRemove([adminId]),
+    });
+  }
+
+  // Group Message Methods
+  Future<void> sendGroupMessage(GroupMessageModel message) async {
+    await _firestore.collection('group_messages').add(message.toMap());
+  }
+
+  Stream<List<GroupMessageModel>> getGroupMessages(String groupId) {
+    return _firestore
+        .collection('group_messages')
+        .where('groupId', isEqualTo: groupId)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => GroupMessageModel.fromMap(doc.data()))
+              .toList(),
+        );
+  }
+
+  // ===== END OF GROUP METHODS =====
 }

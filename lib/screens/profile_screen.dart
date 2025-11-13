@@ -354,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: 'Help & Support',
                         subtitle: 'Get help with farming',
                         onTap: () {
-                          // Add help functionality
+                          _showHelpAndSupport();
                         },
                       ),
                       Divider(height: 1),
@@ -459,6 +459,402 @@ class _ProfileScreenState extends State<ProfileScreen> {
       SnackBar(
         content: Text('Profile updated successfully'),
         backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showHelpAndSupport() {
+    final primaryGreen = Color(0xFF2E7D32);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            backgroundColor: primaryGreen,
+            elevation: 0,
+            title: Text(
+              'Help & Support',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          body: SingleChildScrollView(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome Section
+                Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFE8F5E8),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.agriculture, size: 48, color: primaryGreen),
+                      SizedBox(height: 16),
+                      Text(
+                        'Welcome to FarmGuard!',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: primaryGreen,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Your smart farming companion for pest detection, weather monitoring, and community support.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[700], fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 32),
+
+                // Quick Help Section
+                Text(
+                  'Quick Help',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: primaryGreen,
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                _buildHelpCard(
+                  icon: Icons.camera_alt,
+                  title: 'Taking Photos for Detection',
+                  description:
+                      'Take clear photos of plants or pests. Ensure good lighting and focus on the affected area for best results.',
+                ),
+
+                _buildHelpCard(
+                  icon: Icons.people,
+                  title: 'Connecting with Farmers',
+                  description:
+                      'Add friends to share detections and get advice. Join groups to discuss farming topics with the community.',
+                ),
+
+                _buildHelpCard(
+                  icon: Icons.message,
+                  title: 'Messaging & Groups',
+                  description:
+                      'Use private messages for direct communication. Create or join groups for farming discussions.',
+                ),
+
+                _buildHelpCard(
+                  icon: Icons.wb_sunny,
+                  title: 'Weather & Alerts',
+                  description:
+                      'Check weather conditions and receive alerts about optimal farming conditions.',
+                ),
+
+                SizedBox(height: 32),
+
+                // Farming Tips Section
+                Text(
+                  'Farming Tips',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: primaryGreen,
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                _buildTipCard(
+                  '🌱 Plant Health',
+                  'Regular monitoring helps catch issues early. Use our detection feature weekly for best results.',
+                ),
+
+                _buildTipCard(
+                  '🐛 Pest Control',
+                  'Identify pests early to prevent crop damage. Natural solutions are often most effective.',
+                ),
+
+                _buildTipCard(
+                  '🌦️ Weather Planning',
+                  'Plan activities around weather forecasts. Monitor soil moisture and irrigation needs.',
+                ),
+
+                _buildTipCard(
+                  '👥 Community Support',
+                  'Connect with other farmers for advice and support. Share your experiences and learn from others.',
+                ),
+
+                SizedBox(height: 32),
+
+                // Contact Information
+                Text(
+                  'Contact Us',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: primaryGreen,
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: primaryGreen.withOpacity(0.1)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildContactItem(
+                        icon: Icons.email,
+                        title: 'Email Support',
+                        subtitle: 'support@farmguard.com',
+                        onTap: () {
+                          // Could open email app
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Email: support@farmguard.com'),
+                            ),
+                          );
+                        },
+                      ),
+                      Divider(),
+                      _buildContactItem(
+                        icon: Icons.phone,
+                        title: 'Phone Support',
+                        subtitle: '+1 (555) 123-4567',
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Phone: +1 (555) 123-4567')),
+                          );
+                        },
+                      ),
+                      Divider(),
+                      _buildContactItem(
+                        icon: Icons.language,
+                        title: 'Website',
+                        subtitle: 'www.farmguard.com',
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Website: www.farmguard.com'),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 32),
+
+                // FAQ Section
+                Text(
+                  'Frequently Asked Questions',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: primaryGreen,
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                _buildFAQItem(
+                  'How accurate is the pest detection?',
+                  'Our AI detection system is trained on thousands of pest images and typically achieves 85-95% accuracy. Always consult with local agricultural experts for critical decisions.',
+                ),
+
+                _buildFAQItem(
+                  'Can I use this app offline?',
+                  'Basic features work offline, but detection analysis and messaging require internet connection.',
+                ),
+
+                _buildFAQItem(
+                  'How do I invite friends to join?',
+                  'Go to the People screen and use the search function to find friends. Send friend requests and start messaging once accepted.',
+                ),
+
+                _buildFAQItem(
+                  'What types of crops are supported?',
+                  'The app works with most common crops including vegetables, fruits, grains, and ornamental plants.',
+                ),
+
+                SizedBox(height: 32),
+
+                // App Version
+                Center(
+                  child: Text(
+                    'FarmGuard v1.0.0',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                  ),
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHelpCard({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    final primaryGreen = Color(0xFF2E7D32);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: primaryGreen.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primaryGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: primaryGreen, size: 24),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: primaryGreen,
+                    fontSize: 16,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTipCard(String emoji, String tip) {
+    final primaryGreen = Color(0xFF2E7D32);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Color(0xFFE8F5E8),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Text(emoji, style: TextStyle(fontSize: 24)),
+          SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              tip,
+              style: TextStyle(color: primaryGreen, fontSize: 14, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContactItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final primaryGreen = Color(0xFF2E7D32);
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: primaryGreen, size: 24),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: primaryGreen,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: primaryGreen.withOpacity(0.5)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFAQItem(String question, String answer) {
+    final primaryGreen = Color(0xFF2E7D32);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: primaryGreen.withOpacity(0.1)),
+      ),
+      child: ExpansionTile(
+        title: Text(
+          question,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: primaryGreen,
+            fontSize: 16,
+          ),
+        ),
+        children: [
+          Padding(
+            padding: EdgeInsets.only(bottom: 16, left: 16, right: 16),
+            child: Text(
+              answer,
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

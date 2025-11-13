@@ -7,6 +7,8 @@ import '../models/announcement_model.dart';
 import 'friends_screen.dart';
 import 'messages_screen.dart';
 import 'profile_screen.dart';
+import '../services/weather_service.dart';
+import '../models/weather_model.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -19,6 +21,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   final DatabaseService _dbService = DatabaseService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final WeatherService _weatherService = WeatherService();
+  WeatherModel? _currentWeather;
+
+  @override
+  void initState() {
+    super.initState();
+    _weatherService.startWeatherMonitoring();
+    _weatherService.weatherStream.listen((weather) {
+      setState(() {
+        _currentWeather = weather;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _weatherService.stopWeatherMonitoring();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,23 +159,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // Quick Stats Cards
           Row(
             children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Weather',
-                  'Sunny, 25°C',
-                  Icons.wb_sunny,
-                  primaryGreen,
-                ),
-              ),
+              Expanded(child: _buildWeatherCard(_currentWeather)),
               SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'Wind',
-                  '15 km/h NE',
-                  Icons.air,
-                  primaryGreen,
-                ),
-              ),
+              Expanded(child: _buildWindCard(_currentWeather)),
             ],
           ),
           SizedBox(height: 32),
@@ -771,5 +778,320 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.month}/${date.day}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}';
+  }
+
+  Widget _buildWeatherCard(WeatherModel? weather) {
+    final primaryGreen = Color(0xFF2E7D32);
+
+    return InkWell(
+      onTap: () => _showWeatherDetails(weather),
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: primaryGreen.withOpacity(0.1),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              weather?.weatherIcon ?? Icons.wb_sunny,
+              color: weather?.weatherColor ?? primaryGreen,
+              size: 40,
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Weather',
+                    style: TextStyle(
+                      color: primaryGreen,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    weather != null
+                        ? '${weather.condition}, ${weather.temperatureString}'
+                        : 'Loading...',
+                    style: TextStyle(
+                      color: primaryGreen.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (weather?.hasTyphoon ?? false) ...[
+                    SizedBox(height: 4),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '⚠️ ${weather!.typhoonWarning}',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWindCard(WeatherModel? weather) {
+    final primaryGreen = Color(0xFF2E7D32);
+    final lightGreen = Color(0xFFC8E6C9);
+
+    return InkWell(
+      onTap: () => _showWeatherDetails(weather),
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: lightGreen,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: primaryGreen, width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.air, color: primaryGreen, size: 40),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Wind & Humidity',
+                    style: TextStyle(
+                      color: primaryGreen,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    weather != null
+                        ? 'Speed: ${weather.windSpeedString}, ${weather.windDirection}'
+                        : 'Loading...',
+                    style: TextStyle(
+                      color: primaryGreen.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    weather != null
+                        ? 'Humidity: ${weather.humidityString}'
+                        : '',
+                    style: TextStyle(
+                      color: primaryGreen.withOpacity(0.6),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showWeatherDetails(WeatherModel? weather) {
+    if (weather == null) return;
+
+    final primaryGreen = Color(0xFF2E7D32);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header with time and date
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  weather.weatherIcon,
+                  color: weather.weatherColor,
+                  size: 32,
+                ),
+                SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      weather.datetimeString,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: primaryGreen,
+                      ),
+                    ),
+                    Text(
+                      weather.isDaytime ? 'Daytime' : 'Nighttime',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 24),
+
+            // Weather details grid
+            Row(
+              children: [
+                Expanded(
+                  child: _buildWeatherDetailCard(
+                    'Temperature',
+                    weather.temperatureString,
+                    Icons.thermostat,
+                    Colors.orange,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _buildWeatherDetailCard(
+                    'Humidity',
+                    weather.humidityString,
+                    Icons.water_drop,
+                    Colors.blue,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildWeatherDetailCard(
+                    'Wind Speed',
+                    weather.windSpeedString,
+                    Icons.air,
+                    Colors.teal,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _buildWeatherDetailCard(
+                    'Direction',
+                    weather.windDirection,
+                    Icons.explore,
+                    Colors.purple,
+                  ),
+                ),
+              ],
+            ),
+
+            if (weather.hasTyphoon) ...[
+              SizedBox(height: 24),
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.red, size: 24),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Typhoon Alert!',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            '${weather.typhoonName} - ${weather.typhoonWarning}',
+                            style: TextStyle(
+                              color: Colors.red[700],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            SizedBox(height: 24),
+            Text(
+              'Weather updates every 30 seconds',
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeatherDetailCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
