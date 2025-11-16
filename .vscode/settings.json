@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "C:/Desktop/login/linux"
+    "cmake.sourceDirectory": "C:/Desktop/login/linux",
+    "liveServer.settings.port": 5501
 }

@@ -64,14 +64,12 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
   Future<void> _resendCode() async {
     setState(() => _isLoading = true);
     try {
-      final otpCode = await _otpService.resendOTP(widget.email);
+      await _otpService.resendOTP(widget.email);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Code resent successfully. Code: $otpCode (for testing)',
-          ),
+          content: Text('Code resent successfully. Please check your email.'),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 5),
+          duration: Duration(seconds: 3),
         ),
       );
     } catch (e) {

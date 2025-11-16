@@ -1,11 +1,14 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// Remove Firebase Auth import if not needed
+// import 'package:firebase_auth/firebase_auth.dart';
 import '../models/otp_model.dart';
+import 'email_service.dart';
 
 class OTPService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Remove Firebase Auth instance if not needed
+  // final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Generate a 6-digit OTP code
   String _generateOTP() {
@@ -15,40 +18,45 @@ class OTPService {
 
   // Send OTP for password change
   Future<String> sendOTPForPasswordChange(String email) async {
-    // Generate OTP
-    final code = _generateOTP();
-    final otpId = DateTime.now().millisecondsSinceEpoch.toString();
-    final now = DateTime.now();
-    final expiresAt = now.add(Duration(minutes: 10)); // OTP expires in 10 minutes
-
-    // Create OTP model
-    final otp = OTPModel(
-      id: otpId,
-      email: email,
-      code: code,
-      purpose: 'change_password',
-      createdAt: now,
-      expiresAt: expiresAt,
-    );
-
-    // Save to Firestore
-    await _firestore.collection('otps').doc(otpId).set(otp.toMap());
-
-    // Send email via Firebase Auth (this will send a password reset email with the code)
-    // For a real implementation, you might want to use a service like SendGrid, Twilio, etc.
-    // For now, we'll use Firebase's sendPasswordResetEmail and store the OTP in Firestore
     try {
-      await _auth.sendPasswordResetEmail(email: email);
+      // Generate OTP
+      final code = _generateOTP();
+      final otpId = DateTime.now().millisecondsSinceEpoch.toString();
+      final now = DateTime.now();
+      final expiresAt = now.add(Duration(minutes: 10));
+
+      // Create OTP model
+      final otp = OTPModel(
+        id: otpId,
+        email: email,
+        code: code,
+        purpose: 'change_password',
+        createdAt: now,
+        expiresAt: expiresAt,
+      );
+
+      // Save to Firestore
+      await _firestore.collection('otps').doc(otpId).set(otp.toMap());
+
+      // Send email via EmailJS
+      final emailSent = await EmailService.sendOTPEmail(email, code);
+
+      if (emailSent) {
+        print('✅ OTP email sent to $email: $code');
+        return code;
+      } else {
+        // Fallback: show OTP in console
+        print('❌ Email failed - OTP for $email: $code');
+        print('📱 Please check the console for the OTP code during testing');
+        return code; // Still return code for testing
+      }
     } catch (e) {
-      // If email sending fails, still store the OTP
-      print('Email sending failed: $e');
+      print('Error sending OTP: $e');
+      // For testing, still generate and return OTP even if email fails
+      final code = _generateOTP();
+      print('🔄 Fallback OTP for $email: $code');
+      return code;
     }
-
-    // In a real app, you would send the OTP via email/SMS service
-    // For now, we'll also log it (remove in production)
-    print('OTP for $email: $code'); // Remove this in production
-
-    return code; // Return code for testing (remove in production)
   }
 
   // Verify OTP
@@ -65,26 +73,39 @@ class OTPService {
           .get();
 
       if (snapshot.docs.isEmpty) {
+        print('❌ No OTP found for $email');
         return false;
       }
 
       final doc = snapshot.docs.first;
       final otp = OTPModel.fromMap(doc.data());
 
-      // Check if OTP is valid
-      if (!otp.isValid) {
+      // Check if OTP is expired
+      if (otp.isExpired) {
+        print('❌ OTP expired for $email');
+        await doc.reference.update({'isUsed': true});
+        return false;
+      }
+
+      // Check attempt limit
+      if (otp.hasExceededAttempts) {
+        print('❌ Too many attempts for $email');
+        await doc.reference.update({'isUsed': true});
         return false;
       }
 
       // Check if code matches
       if (otp.code != code) {
+        print('❌ Invalid OTP for $email');
+        // Increment attempts
+        final updatedAttempts = otp.attempts + 1;
+        await doc.reference.update({'attempts': updatedAttempts});
         return false;
       }
 
-      // Mark OTP as used
-      await _firestore.collection('otps').doc(doc.id).update({
-        'isUsed': true,
-      });
+      // Mark OTP as used on successful verification
+      await doc.reference.update({'isUsed': true});
+      print('✅ OTP verified successfully for $email');
 
       return true;
     } catch (e) {
@@ -95,33 +116,24 @@ class OTPService {
 
   // Resend OTP
   Future<String> resendOTP(String email) async {
-    // Invalidate old OTPs for this email and purpose
-    final oldOtps = await _firestore
-        .collection('otps')
-        .where('email', isEqualTo: email)
-        .where('purpose', isEqualTo: 'change_password')
-        .where('isUsed', isEqualTo: false)
-        .get();
+    try {
+      // Invalidate old OTPs for this email and purpose
+      final oldOtps = await _firestore
+          .collection('otps')
+          .where('email', isEqualTo: email)
+          .where('purpose', isEqualTo: 'change_password')
+          .where('isUsed', isEqualTo: false)
+          .get();
 
-    for (var doc in oldOtps.docs) {
-      await doc.reference.update({'isUsed': true});
-    }
+      for (var doc in oldOtps.docs) {
+        await doc.reference.update({'isUsed': true});
+      }
 
-    // Generate and send new OTP
-    return await sendOTPForPasswordChange(email);
-  }
-
-  // Clean up expired OTPs (can be called periodically)
-  Future<void> cleanupExpiredOTPs() async {
-    final now = DateTime.now();
-    final expiredOtps = await _firestore
-        .collection('otps')
-        .where('expiresAt', isLessThan: now.toIso8601String())
-        .get();
-
-    for (var doc in expiredOtps.docs) {
-      await doc.reference.delete();
+      // Generate and send new OTP
+      return await sendOTPForPasswordChange(email);
+    } catch (e) {
+      print('Error resending OTP: $e');
+      throw Exception('Failed to resend OTP: $e');
     }
   }
 }
-

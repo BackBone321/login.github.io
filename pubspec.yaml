@@ -34,10 +34,16 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  firebase_core: ^4.2.1
+  firebase_core: ^4.2.1        # Updated from ^3.0.0
   get: ^4.7.2
-  cloud_firestore: ^6.1.0
-  firebase_auth: ^6.1.2
+  cloud_firestore: ^6.1.0      # Updated from ^5.0.0
+  firebase_auth: ^6.1.2        # Updated from ^5.0.0
+  http: ^1.2.0
+  cloud_functions: ^6.0.4      # Already updated - this fixed the conflict
+  url_launcher: ^6.2.5
+  # OR use a dedicated email service like:
+  # mailgun: ^1.0.0
+  # sendgrid: ^1.0.0
 
 dev_dependencies:
   flutter_test:

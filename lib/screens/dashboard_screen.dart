@@ -94,9 +94,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           label: 'People',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.eco_outlined),
-          activeIcon: Icon(Icons.eco),
-          label: 'Plant',
+          icon: Icon(Icons.camera_alt_outlined),
+          activeIcon: Icon(Icons.camera),
+          label: 'Detections',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.message_outlined),
@@ -121,7 +121,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 2:
         return _buildPlantScreen();
       case 3:
-        return MessagesScreen();
+        return EnhancedMessagesScreen();
       case 4:
         return ProfileScreen();
       default:

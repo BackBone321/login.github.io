@@ -2,10 +2,11 @@ class OTPModel {
   final String id;
   final String email;
   final String code;
-  final String purpose; // 'password_reset', 'change_password', etc.
+  final String purpose;
   final DateTime createdAt;
   final DateTime expiresAt;
   final bool isUsed;
+  final int attempts;
 
   OTPModel({
     required this.id,
@@ -15,6 +16,7 @@ class OTPModel {
     required this.createdAt,
     required this.expiresAt,
     this.isUsed = false,
+    this.attempts = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +28,7 @@ class OTPModel {
       'createdAt': createdAt.toIso8601String(),
       'expiresAt': expiresAt.toIso8601String(),
       'isUsed': isUsed,
+      'attempts': attempts,
     };
   }
 
@@ -42,11 +45,19 @@ class OTPModel {
           ? DateTime.parse(map['expiresAt'])
           : DateTime.now(),
       isUsed: map['isUsed'] ?? false,
+      attempts: map['attempts'] ?? 0,
     );
   }
 
   bool get isValid {
-    return !isUsed && DateTime.now().isBefore(expiresAt);
+    return !isUsed && !isExpired && attempts < 3;
+  }
+
+  bool get isExpired {
+    return DateTime.now().isAfter(expiresAt);
+  }
+
+  bool get hasExceededAttempts {
+    return attempts >= 3;
   }
 }
-

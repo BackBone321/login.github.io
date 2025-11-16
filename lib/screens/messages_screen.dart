@@ -1,19 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/database_service.dart';
 import '../models/message_model.dart';
 import '../models/user_model.dart';
 import '../models/group_model.dart';
 import '../models/group_message_model.dart';
 
-class MessagesScreen extends StatefulWidget {
-  const MessagesScreen({super.key});
+Future<void> _launchVideoCall(BuildContext context, String roomId) async {
+  final sanitizedRoomId = roomId.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '');
+  final uri = Uri.parse('https://meet.jit.si/$sanitizedRoomId');
 
-  @override
-  _MessagesScreenState createState() => _MessagesScreenState();
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.platformDefault);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Could not start video call'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 }
 
-class _MessagesScreenState extends State<MessagesScreen>
+class EnhancedMessagesScreen extends StatefulWidget {
+  const EnhancedMessagesScreen({super.key});
+
+  @override
+  _EnhancedMessagesScreenState createState() => _EnhancedMessagesScreenState();
+}
+
+class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
     with SingleTickerProviderStateMixin {
   final DatabaseService _dbService = DatabaseService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -23,7 +40,6 @@ class _MessagesScreenState extends State<MessagesScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // Always start on Chats tab
     _tabController.index = 0;
   }
 
@@ -33,7 +49,6 @@ class _MessagesScreenState extends State<MessagesScreen>
     super.dispose();
   }
 
-  // Add this method to manually switch to Chats
   void _switchToChats() {
     setState(() {
       _tabController.animateTo(0);
@@ -52,7 +67,6 @@ class _MessagesScreenState extends State<MessagesScreen>
         elevation: 0,
         title: Text('Messages', style: TextStyle(fontWeight: FontWeight.w600)),
         actions: [
-          // Add back to chats button when on groups tab
           if (_tabController.index == 1)
             IconButton(
               icon: Icon(Icons.chat),
@@ -115,8 +129,8 @@ class _MessagesScreenState extends State<MessagesScreen>
           ? FloatingActionButton(
               onPressed: _switchToChats,
               backgroundColor: primaryGreen,
-              child: Icon(Icons.chat, color: Colors.white),
               tooltip: 'Back to Chats',
+              child: Icon(Icons.chat, color: Colors.white),
             )
           : null,
     );
@@ -298,7 +312,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => GroupChatScreen(group: group)),
+          MaterialPageRoute(builder: (_) => EnhancedGroupChatScreen(group: group)),
         );
       },
       child: Container(
@@ -450,42 +464,40 @@ class _MessagesScreenState extends State<MessagesScreen>
                         style: TextStyle(color: Colors.grey),
                       );
                     }
-                    return Container(
-                      height: 200,
-                      child: ListView.builder(
-                        itemCount: friendsSnapshot.data!.length,
-                        itemBuilder: (context, index) {
-                          final friendId = friendsSnapshot.data![index];
-                          return FutureBuilder<UserModel?>(
-                            future: _dbService.getUser(friendId),
-                            builder: (context, userSnapshot) {
-                              if (!userSnapshot.hasData)
-                                return SizedBox.shrink();
-                              final friend = userSnapshot.data!;
-                              final isSelected = selectedFriends.contains(
-                                friend.uid,
-                              );
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: friendsSnapshot.data!
+                          .map((friendId) => FutureBuilder<UserModel?>(
+                                future: _dbService.getUser(friendId),
+                                builder: (context, userSnapshot) {
+                                  if (!userSnapshot.hasData) {
+                                    return SizedBox.shrink();
+                                  }
+                                  final friend = userSnapshot.data!;
+                                  final isSelected =
+                                      selectedFriends.contains(friend.uid);
 
-                              return CheckboxListTile(
-                                title: Text(
-                                  friend.displayName ?? friend.email ?? 'User',
-                                ),
-                                value: isSelected,
-                                onChanged: (bool? value) {
-                                  setState(() {
-                                    if (value == true) {
-                                      selectedFriends.add(friend.uid);
-                                    } else {
-                                      selectedFriends.remove(friend.uid);
-                                    }
-                                  });
+                                  return CheckboxListTile(
+                                    title: Text(
+                                      friend.displayName ??
+                                          friend.email ??
+                                          'User',
+                                    ),
+                                    value: isSelected,
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        if (value == true) {
+                                          selectedFriends.add(friend.uid);
+                                        } else {
+                                          selectedFriends.remove(friend.uid);
+                                        }
+                                      });
+                                    },
+                                    activeColor: Color(0xFF2E7D32),
+                                  );
                                 },
-                                activeColor: Color(0xFF2E7D32),
-                              );
-                            },
-                          );
-                        },
-                      ),
+                              ))
+                          .toList(),
                     );
                   },
                 ),
@@ -516,15 +528,12 @@ class _MessagesScreenState extends State<MessagesScreen>
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        'Group created successfully! Tap the chat icon to go back to chats.',
+                        'Group created successfully!',
                       ),
                       backgroundColor: Colors.green,
                       duration: Duration(seconds: 4),
                     ),
                   );
-
-                  // Don't auto-switch tabs - let user decide
-                  // _tabController.animateTo(1);
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -585,7 +594,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => ChatScreen(otherUser: user)),
+          MaterialPageRoute(builder: (_) => EnhancedChatScreen(otherUser: user)),
         );
       },
       child: Container(
@@ -643,39 +652,30 @@ class _MessagesScreenState extends State<MessagesScreen>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => ChatScreen(otherUser: user)),
+              MaterialPageRoute(builder: (_) => EnhancedChatScreen(otherUser: user)),
             );
           },
           child: Container(
-            margin: EdgeInsets.only(bottom: 12),
+            margin: EdgeInsets.only(bottom: 8),
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
                   color: primaryGreen.withOpacity(0.05),
-                  blurRadius: 8,
+                  blurRadius: 4,
                   offset: Offset(0, 2),
                 ),
               ],
             ),
             child: Row(
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: primaryGreen.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: CircleAvatar(
-                    radius: 28,
-                    backgroundColor: primaryGreen,
-                    child: Icon(Icons.person, color: Colors.white, size: 24),
-                  ),
+                CircleAvatar(
+                  backgroundColor: primaryGreen,
+                  child: Icon(Icons.person, color: Colors.white),
                 ),
-                SizedBox(width: 16),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -683,25 +683,22 @@ class _MessagesScreenState extends State<MessagesScreen>
                       Text(
                         user.displayName ?? user.email ?? 'User',
                         style: TextStyle(
-                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: primaryGreen,
                         ),
                       ),
-                      SizedBox(height: 4),
                       Text(
-                        conversation['lastMessage'] as String,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        conversation['lastMessage'] ?? '',
+                        style: TextStyle(color: Colors.grey[600]),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        _formatTimestamp(conversation['timestamp'] as DateTime),
-                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                      ),
                     ],
                   ),
+                ),
+                Text(
+                  _formatMessageTime(conversation['timestamp']),
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
                 ),
               ],
             ),
@@ -711,42 +708,57 @@ class _MessagesScreenState extends State<MessagesScreen>
     );
   }
 
-  String _formatTimestamp(DateTime timestamp) {
+  String _formatMessageTime(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
 
-    if (difference.inDays == 0) {
-      return '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
     } else {
       return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
     }
   }
 }
 
-class ChatScreen extends StatefulWidget {
+class EnhancedChatScreen extends StatefulWidget {
   final UserModel otherUser;
 
-  const ChatScreen({super.key, required this.otherUser});
+  const EnhancedChatScreen({super.key, required this.otherUser});
 
   @override
-  _ChatScreenState createState() => _ChatScreenState();
+  _EnhancedChatScreenState createState() => _EnhancedChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
   final DatabaseService _dbService = DatabaseService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  void _startPrivateVideoCall() {
+    final currentUid = _auth.currentUser!.uid;
+    final otherUid = widget.otherUser.uid;
+    final ids = [currentUid, otherUid]..sort();
+    final roomId = 'farmguard-chat-${ids[0]}-${ids[1]}';
+    _launchVideoCall(context, roomId);
+  }
+
+  void _startPrivateVoiceCall() {
+    final currentUid = _auth.currentUser!.uid;
+    final otherUid = widget.otherUser.uid;
+    final ids = [currentUid, otherUid]..sort();
+    final roomId = 'farmguard-voice-${ids[0]}-${ids[1]}';
+    _launchVideoCall(context, roomId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
     final lightGreen = Color(0xFFE8F5E8);
-    final currentUserId = _auth.currentUser!.uid;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -755,41 +767,65 @@ class _ChatScreenState extends State<ChatScreen> {
         elevation: 0,
         title: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
+            CircleAvatar(
+              backgroundColor: Colors.white.withOpacity(0.2),
               child: Icon(Icons.person, color: Colors.white, size: 20),
             ),
             SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.otherUser.displayName ??
-                        widget.otherUser.email ??
-                        'User',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  Text(
-                    'Online', // You can make this dynamic
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
-                  ),
-                ],
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.otherUser.displayName ?? widget.otherUser.email ?? 'User',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  'Online',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+                ),
+              ],
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.more_vert),
-            onPressed: () {
-              // Add more options menu
+            icon: Icon(Icons.call),
+            onPressed: _startPrivateVoiceCall,
+          ),
+          IconButton(
+            icon: Icon(Icons.videocam),
+            onPressed: _startPrivateVideoCall,
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'view_profile') {
+                // Navigate to profile
+              } else if (value == 'block') {
+                // Block user
+              }
             },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'view_profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person, color: primaryGreen),
+                    SizedBox(width: 8),
+                    Text('View Profile'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'block',
+                child: Row(
+                  children: [
+                    Icon(Icons.block, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Block User'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -797,67 +833,64 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           // Messages List
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(color: Colors.grey[50]),
-              child: StreamBuilder<List<MessageModel>>(
-                stream: _dbService.getMessages(
-                  currentUserId,
-                  widget.otherUser.uid,
-                ),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(
-                      child: CircularProgressIndicator(color: primaryGreen),
-                    );
-                  }
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.chat_bubble_outline,
-                            size: 48,
-                            color: primaryGreen.withOpacity(0.3),
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Start a conversation',
-                            style: TextStyle(
-                              color: primaryGreen,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  final messages = snapshot.data!.reversed.toList();
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (_scrollController.hasClients) {
-                      _scrollController.animateTo(
-                        0,
-                        duration: Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      );
-                    }
-                  });
-
-                  return ListView.builder(
-                    controller: _scrollController,
-                    reverse: true,
-                    padding: EdgeInsets.all(16),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final message = messages[index];
-                      final isMe = message.senderId == currentUserId;
-                      return _buildMessageBubble(message, isMe);
-                    },
-                  );
-                },
+            child: StreamBuilder<List<MessageModel>>(
+              stream: _dbService.getMessages(
+                _auth.currentUser!.uid,
+                widget.otherUser.uid,
               ),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: CircularProgressIndicator(color: primaryGreen),
+                  );
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 48,
+                          color: primaryGreen.withOpacity(0.3),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Start a conversation',
+                          style: TextStyle(
+                            color: primaryGreen,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final messages = snapshot.data!.reversed.toList();
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.animateTo(
+                      0,
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                });
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  reverse: true,
+                  padding: EdgeInsets.all(16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final isMe = message.senderId == _auth.currentUser!.uid;
+                    return _buildMessageBubble(message, isMe);
+                  },
+                );
+              },
             ),
           ),
 
@@ -876,6 +909,12 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: Row(
               children: [
+                IconButton(
+                  icon: Icon(Icons.add, color: primaryGreen),
+                  onPressed: () {
+                    // Add attachment options
+                  },
+                ),
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
@@ -912,7 +951,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       if (_messageController.text.trim().isNotEmpty) {
                         final message = MessageModel(
                           id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          senderId: currentUserId,
+                          senderId: _auth.currentUser!.uid,
                           receiverId: widget.otherUser.uid,
                           senderName:
                               _auth.currentUser!.displayName ??
@@ -920,6 +959,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               'User',
                           content: _messageController.text.trim(),
                           timestamp: DateTime.now(),
+                          isRead: false,
                         );
                         await _dbService.sendMessage(message);
                         _messageController.clear();
@@ -937,7 +977,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageBubble(MessageModel message, bool isMe) {
     final primaryGreen = Color(0xFF2E7D32);
-    final lightGreen = Color(0xFFE8F5E8);
 
     return Padding(
       padding: EdgeInsets.only(bottom: 12),
@@ -967,18 +1006,6 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (!isMe)
-                Padding(
-                  padding: EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    message.senderName,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: primaryGreen,
-                    ),
-                  ),
-                ),
               Text(
                 message.content,
                 style: TextStyle(
@@ -1015,38 +1042,42 @@ class _ChatScreenState extends State<ChatScreen> {
     } else if (difference.inHours < 24) {
       return '${difference.inHours}h ago';
     } else {
-      return '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
+      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
     }
   }
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
 }
 
-class GroupChatScreen extends StatefulWidget {
+class EnhancedGroupChatScreen extends StatefulWidget {
   final GroupModel group;
 
-  const GroupChatScreen({super.key, required this.group});
+  const EnhancedGroupChatScreen({super.key, required this.group});
 
   @override
-  _GroupChatScreenState createState() => _GroupChatScreenState();
+  _EnhancedGroupChatScreenState createState() => _EnhancedGroupChatScreenState();
 }
 
-class _GroupChatScreenState extends State<GroupChatScreen> {
+class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
   final DatabaseService _dbService = DatabaseService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  void _startGroupVideoCall() {
+    final roomId = 'farmguard-group-${widget.group.id}';
+    _launchVideoCall(context, roomId);
+  }
+
+  void _startGroupVoiceCall() {
+    final roomId = 'farmguard-voice-${widget.group.id}';
+    _launchVideoCall(context, roomId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
     final lightGreen = Color(0xFFE8F5E8);
-    final isAdmin = widget.group.adminIds.contains(_auth.currentUser!.uid);
+    final isAdmin = widget.group.adminIds.contains(_auth.currentUser!.uid) ||
+        widget.group.creatorId == _auth.currentUser!.uid;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -1083,6 +1114,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.call),
+            onPressed: _startGroupVoiceCall,
+          ),
+          IconButton(
+            icon: Icon(Icons.videocam),
+            onPressed: _startGroupVideoCall,
+          ),
           if (isAdmin)
             PopupMenuButton<String>(
               onSelected: (value) {
@@ -1090,9 +1129,21 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   _showManageMembersDialog();
                 } else if (value == 'group_settings') {
                   _showGroupSettingsDialog();
+                } else if (value == 'add_members') {
+                  _showAddMembersDialog();
                 }
               },
               itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'add_members',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_add, color: primaryGreen),
+                      SizedBox(width: 8),
+                      Text('Add Members'),
+                    ],
+                  ),
+                ),
                 PopupMenuItem(
                   value: 'manage_members',
                   child: Row(
@@ -1197,6 +1248,12 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             ),
             child: Row(
               children: [
+                IconButton(
+                  icon: Icon(Icons.add, color: primaryGreen),
+                  onPressed: () {
+                    // Add attachment options
+                  },
+                ),
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
@@ -1295,7 +1352,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         member.uid,
                       );
                       final canManage =
-                          widget.group.creatorId == _auth.currentUser!.uid;
+                          widget.group.creatorId == _auth.currentUser!.uid ||
+                          (widget.group.adminIds.contains(_auth.currentUser!.uid) &&
+                              !isCreator &&
+                              !isAdmin);
 
                       return ListTile(
                         leading: CircleAvatar(
@@ -1420,6 +1480,128 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     );
   }
 
+  void _showAddMembersDialog() {
+    List<String> selectedFriends = [];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(
+            'Add Members',
+            style: TextStyle(
+              color: Color(0xFF2E7D32),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Container(
+            width: double.maxFinite,
+            height: 400,
+            child: StreamBuilder<List<String>>(
+              stream: _dbService.getFriends(_auth.currentUser!.uid),
+              builder: (context, friendsSnapshot) {
+                if (!friendsSnapshot.hasData || friendsSnapshot.data!.isEmpty) {
+                  return Center(
+                    child: Text('No friends to add'),
+                  );
+                }
+
+                // Filter out existing members
+                final availableFriends = friendsSnapshot.data!.where(
+                  (friendId) => !widget.group.memberIds.contains(friendId),
+                ).toList();
+
+                if (availableFriends.isEmpty) {
+                  return Center(
+                    child: Text('All friends are already in this group'),
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: availableFriends.length,
+                  itemBuilder: (context, index) {
+                    final friendId = availableFriends[index];
+                    return FutureBuilder<UserModel?>(
+                      future: _dbService.getUser(friendId),
+                      builder: (context, userSnapshot) {
+                        if (!userSnapshot.hasData) return SizedBox.shrink();
+                        final friend = userSnapshot.data!;
+                        final isSelected = selectedFriends.contains(friend.uid);
+
+                        return CheckboxListTile(
+                          title: Text(
+                            friend.displayName ?? friend.email ?? 'User',
+                          ),
+                          subtitle: Text(friend.email ?? ''),
+                          value: isSelected,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                selectedFriends.add(friend.uid);
+                              } else {
+                                selectedFriends.remove(friend.uid);
+                              }
+                            });
+                          },
+                          activeColor: Color(0xFF2E7D32),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: selectedFriends.isEmpty
+                  ? null
+                  : () async {
+                      await _addMembers(selectedFriends);
+                      Navigator.pop(context);
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF2E7D32),
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Add Selected (${selectedFriends.length})'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addMembers(List<String> memberIds) async {
+    try {
+      // Add members to Firestore
+      await _dbService.addGroupMembers(widget.group.id, memberIds);
+
+      // Optimistically update local state so UI refreshes instantly
+      setState(() {
+        widget.group.memberIds.addAll(memberIds);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${memberIds.length} member(s) added successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to add members: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _removeMember(UserModel member) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -1444,6 +1626,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
     if (confirm == true) {
       await _dbService.removeGroupMember(widget.group.id, member.uid);
+
+      // Update local state immediately
+      setState(() {
+        widget.group.memberIds.remove(member.uid);
+        widget.group.adminIds.remove(member.uid);
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1457,6 +1646,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   Future<void> _toggleAdmin(UserModel member, bool makeAdmin) async {
     if (makeAdmin) {
       await _dbService.addGroupAdmin(widget.group.id, member.uid);
+      setState(() {
+        widget.group.adminIds.add(member.uid);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1466,6 +1658,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       );
     } else {
       await _dbService.removeGroupAdmin(widget.group.id, member.uid);
+      setState(() {
+        widget.group.adminIds.remove(member.uid);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1624,12 +1819,5 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     } else {
       return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
     }
-  }
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
   }
 }

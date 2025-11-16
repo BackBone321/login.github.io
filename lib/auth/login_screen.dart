@@ -95,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Title
               Text(
-                'Welcome Back',
+                'AGRI GUARD',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,

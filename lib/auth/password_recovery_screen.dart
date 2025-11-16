@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
 import '../services/otp_service.dart';
@@ -14,25 +13,41 @@ class PasswordRecoveryScreen extends StatefulWidget {
 
 class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailPhoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _otpService = OTPService();
   bool _isLoading = false;
 
   Future<void> _sendCode() async {
     if (!_formKey.currentState!.validate()) return;
+    
     setState(() => _isLoading = true);
     try {
-      final email = _emailPhoneController.text.trim();
+      final email = _emailController.text.trim();
 
-      // Generate and send OTP
+      // Generate and send OTP using YOUR custom system only
       final otpCode = await _otpService.sendOTPForPasswordChange(email);
 
-      // Show success message with OTP (for testing - remove in production)
+      // Show success message with OTP (for testing)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('OTP sent to your email. Code: $otpCode (for testing)'),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('OTP sent to your email.'),
+              SizedBox(height: 4),
+              Text(
+                'TEST OTP: $otpCode',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text('Check your console for details.'),
+            ],
+          ),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 5),
+          duration: Duration(seconds: 10),
         ),
       );
 
@@ -57,7 +72,6 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
     final lightGreen = Color(0xFFE8F5E8);
-    final accentGreen = Color(0xFF4CAF50);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -109,7 +123,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
               ),
               SizedBox(height: 8),
               Text(
-                'Enter your email and we\'ll send you a code to reset your password',
+                'Enter your email and we\'ll send you a verification code to reset your password',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
@@ -121,7 +135,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                 child: Column(
                   children: [
                     CustomTextField(
-                      controller: _emailPhoneController,
+                      controller: _emailController,
                       label: 'Email Address',
                       keyboardType: TextInputType.emailAddress,
                       validator: (val) =>
@@ -130,9 +144,9 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                     ),
                     SizedBox(height: 32),
 
-                    // Send Code Button - Now using same design as login button
+                    // Send Code Button
                     CustomButton(
-                      text: 'Send Recovery Code',
+                      text: 'Send Verification Code',
                       onPressed: _isLoading ? null : _sendCode,
                       isLoading: _isLoading,
                       isPrimary: true,
@@ -163,7 +177,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
 
   @override
   void dispose() {
-    _emailPhoneController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 }

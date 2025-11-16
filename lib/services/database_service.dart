@@ -371,6 +371,14 @@ class DatabaseService {
     });
   }
 
+  // Add members to a group
+  Future<void> addGroupMembers(String groupId, List<String> memberIds) async {
+    if (memberIds.isEmpty) return;
+    await _firestore.collection('groups').doc(groupId).update({
+      'memberIds': FieldValue.arrayUnion(memberIds),
+    });
+  }
+
   // Group Message Methods
   Future<void> sendGroupMessage(GroupMessageModel message) async {
     await _firestore.collection('group_messages').add(message.toMap());

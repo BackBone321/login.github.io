@@ -30,7 +30,7 @@ class WeatherModel {
     if (hasTyphoon) {
       return Icons.storm;
     }
-    
+
     switch (condition.toLowerCase()) {
       case 'sunny':
       case 'clear':
@@ -56,7 +56,7 @@ class WeatherModel {
     if (hasTyphoon) {
       return Colors.red;
     }
-    
+
     switch (condition.toLowerCase()) {
       case 'sunny':
       case 'clear':
@@ -80,7 +80,7 @@ class WeatherModel {
   // Get typhoon warning level
   String get typhoonWarning {
     if (!hasTyphoon) return '';
-    
+
     switch (typhoonStrength) {
       case 1:
         return 'Tropical Depression';
@@ -116,12 +116,22 @@ class WeatherModel {
   // Get date string
   String get dateString {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${timestamp.day} ${months[timestamp.month - 1]} ${timestamp.year}';
   }
 
   // Get full datetime string
-  String get datetimeString => '${dateString} ${timeString}';
+  String get datetimeString => '$dateString $timeString';
 }

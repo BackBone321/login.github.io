@@ -209,11 +209,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       ),
                     ),
                     SizedBox(height: 4),
-                    if (user.email != null)
-                      Text(
-                        user.email!,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
+                    Text(
+                      user.email!,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
                     if (user.bio != null && user.bio!.isNotEmpty) ...[
                       SizedBox(height: 8),
                       Text(
@@ -240,7 +239,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ChatScreen(otherUser: user),
+                          builder: (_) => EnhancedChatScreen(otherUser: user),
                         ),
                       );
                     },
@@ -625,7 +624,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (user.email != null) ...[
+            ...[
               Text(
                 'Email: ${user.email}',
                 style: TextStyle(color: Colors.grey[700]),
