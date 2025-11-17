@@ -4,6 +4,7 @@ import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
 import '../services/database_service.dart';
 import '../models/user_model.dart';
+import '../admin/admin_login_screen.dart';
 import 'password_recovery_screen.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
@@ -188,6 +189,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         MaterialPageRoute(builder: (_) => SignupScreen()),
                       ),
                       isPrimary: false,
+                    ),
+                    SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminLoginScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Admin login',
+                        style: TextStyle(
+                          color: primaryGreen,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ],
                 ),

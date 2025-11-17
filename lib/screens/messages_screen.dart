@@ -776,7 +776,9 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.otherUser.displayName ?? widget.otherUser.email ?? 'User',
+                  widget.otherUser.displayName ??
+                      widget.otherUser.email ??
+                      'User',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
@@ -798,11 +800,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
-              if (value == 'view_profile') {
-                // Navigate to profile
-              } else if (value == 'block') {
-                // Block user
-              }
+              // Reserved for future actions like view_profile/block
             },
             itemBuilder: (context) => [
               PopupMenuItem(
@@ -831,7 +829,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
       ),
       body: Column(
         children: [
-          // Messages List
+          // Messages list
           Expanded(
             child: StreamBuilder<List<MessageModel>>(
               stream: _dbService.getMessages(
@@ -893,8 +891,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
               },
             ),
           ),
-
-          // Message Input
+          // Message input
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -912,12 +909,13 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                 IconButton(
                   icon: Icon(Icons.add, color: primaryGreen),
                   onPressed: () {
-                    // Add attachment options
+                    // Attachment options in future
                   },
                 ),
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                     decoration: BoxDecoration(
                       color: lightGreen,
                       borderRadius: BorderRadius.circular(24),
@@ -930,7 +928,8 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                           color: primaryGreen.withOpacity(0.6),
                         ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                        contentPadding:
+                            EdgeInsets.symmetric(vertical: 12),
                       ),
                       maxLines: null,
                       textCapitalization: TextCapitalization.sentences,
@@ -950,7 +949,9 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                     onPressed: () async {
                       if (_messageController.text.trim().isNotEmpty) {
                         final message = MessageModel(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          id: DateTime.now()
+                              .millisecondsSinceEpoch
+                              .toString(),
                           senderId: _auth.currentUser!.uid,
                           receiverId: widget.otherUser.uid,
                           senderName:
@@ -979,52 +980,51 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
     final primaryGreen = Color(0xFF2E7D32);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Align(
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
+        child: ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.75,
           ),
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isMe ? primaryGreen : Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-              bottomLeft: isMe ? Radius.circular(16) : Radius.circular(4),
-              bottomRight: isMe ? Radius.circular(4) : Radius.circular(16),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: isMe
+                  ? primaryGreen
+                  : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(20),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: Offset(0, 2),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment:
+                        isMe ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Text(
+                      message.content,
+                      style: TextStyle(
+                        color: isMe ? Colors.white : Colors.black87,
+                        fontSize: 15,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    _formatMessageTime(message.timestamp),
+                    style: TextStyle(
+                      color: isMe
+                          ? Colors.white.withOpacity(0.7)
+                          : Colors.grey[600],
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                message.content,
-                style: TextStyle(
-                  color: isMe ? Colors.white : Colors.black87,
-                  fontSize: 16,
-                  height: 1.3,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                _formatMessageTime(message.timestamp),
-                style: TextStyle(
-                  color: isMe
-                      ? Colors.white.withOpacity(0.7)
-                      : Colors.grey[600],
-                  fontSize: 11,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1072,12 +1072,63 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
     _launchVideoCall(context, roomId);
   }
 
+  Future<void> _leaveGroup() async {
+    final currentUid = _auth.currentUser!.uid;
+    final isCreator = widget.group.creatorId == currentUid;
+
+    if (isCreator) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Group creator cannot leave the group.'),
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Leave Group'),
+        content: Text('Are you sure you want to leave this group?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Leave'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _dbService.removeGroupMember(widget.group.id, currentUid);
+
+      setState(() {
+        widget.group.memberIds.remove(currentUid);
+        widget.group.adminIds.remove(currentUid);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('You left the group'),
+        ),
+      );
+
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
     final lightGreen = Color(0xFFE8F5E8);
     final isAdmin = widget.group.adminIds.contains(_auth.currentUser!.uid) ||
         widget.group.creatorId == _auth.currentUser!.uid;
+    final isCreator = widget.group.creatorId == _auth.currentUser!.uid;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -1122,18 +1173,20 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
             icon: Icon(Icons.videocam),
             onPressed: _startGroupVideoCall,
           ),
-          if (isAdmin)
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'manage_members') {
-                  _showManageMembersDialog();
-                } else if (value == 'group_settings') {
-                  _showGroupSettingsDialog();
-                } else if (value == 'add_members') {
-                  _showAddMembersDialog();
-                }
-              },
-              itemBuilder: (context) => [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'manage_members') {
+                _showManageMembersDialog();
+              } else if (value == 'group_settings' && isAdmin) {
+                _showGroupSettingsDialog();
+              } else if (value == 'add_members' && isAdmin) {
+                _showAddMembersDialog();
+              } else if (value == 'leave_group' && !isCreator) {
+                _leaveGroup();
+              }
+            },
+            itemBuilder: (context) => [
+              if (isAdmin)
                 PopupMenuItem(
                   value: 'add_members',
                   child: Row(
@@ -1144,16 +1197,17 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                     ],
                   ),
                 ),
-                PopupMenuItem(
-                  value: 'manage_members',
-                  child: Row(
-                    children: [
-                      Icon(Icons.people, color: primaryGreen),
-                      SizedBox(width: 8),
-                      Text('Manage Members'),
-                    ],
-                  ),
+              PopupMenuItem(
+                value: 'manage_members',
+                child: Row(
+                  children: [
+                    Icon(Icons.people, color: primaryGreen),
+                    SizedBox(width: 8),
+                    Text('Manage Members'),
+                  ],
                 ),
+              ),
+              if (isAdmin)
                 PopupMenuItem(
                   value: 'group_settings',
                   child: Row(
@@ -1164,13 +1218,27 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                     ],
                   ),
                 ),
-              ],
-            ),
+              if (!isCreator)
+                PopupMenuItem(
+                  value: 'leave_group',
+                  child: Row(
+                    children: [
+                      Icon(Icons.exit_to_app, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text(
+                        'Leave Group',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
       body: Column(
         children: [
-          // Messages List
+          // Messages list
           Expanded(
             child: Container(
               decoration: BoxDecoration(color: Colors.grey[50]),
@@ -1233,7 +1301,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
             ),
           ),
 
-          // Message Input
+          // Message input
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -1742,64 +1810,64 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
     final primaryGreen = Color(0xFF2E7D32);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Align(
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
+        child: ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.75,
           ),
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isMe ? primaryGreen : Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-              bottomLeft: isMe ? Radius.circular(16) : Radius.circular(4),
-              bottomRight: isMe ? Radius.circular(4) : Radius.circular(16),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: isMe
+                  ? primaryGreen
+                  : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(20),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!isMe)
-                Padding(
-                  padding: EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    message.senderName,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: primaryGreen,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Column(
+                crossAxisAlignment:
+                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!isMe)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 2),
+                      child: Text(
+                        message.senderName,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isMe ? Colors.white : primaryGreen,
+                        ),
+                      ),
+                    ),
+                  Align(
+                    alignment:
+                        isMe ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Text(
+                      message.content,
+                      style: TextStyle(
+                        color: isMe ? Colors.white : Colors.black87,
+                        fontSize: 15,
+                        height: 1.3,
+                      ),
                     ),
                   ),
-                ),
-              Text(
-                message.content,
-                style: TextStyle(
-                  color: isMe ? Colors.white : Colors.black87,
-                  fontSize: 16,
-                  height: 1.3,
-                ),
+                  SizedBox(height: 2),
+                  Text(
+                    _formatMessageTime(message.timestamp),
+                    style: TextStyle(
+                      color: isMe
+                          ? Colors.white.withOpacity(0.7)
+                          : Colors.grey[600],
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 4),
-              Text(
-                _formatMessageTime(message.timestamp),
-                style: TextStyle(
-                  color: isMe
-                      ? Colors.white.withOpacity(0.7)
-                      : Colors.grey[600],
-                  fontSize: 11,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

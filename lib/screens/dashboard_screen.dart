@@ -9,6 +9,7 @@ import 'messages_screen.dart';
 import 'profile_screen.dart';
 import '../services/weather_service.dart';
 import '../models/weather_model.dart';
+import '../widgets/detection_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -381,95 +382,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDetectionCard(DetectionModel detection) {
-    final primaryGreen = Color(0xFF2E7D32);
-    IconData icon;
-    String title;
-
-    switch (detection.type) {
-      case 'cow':
-      case 'mammal':
-      case 'mammals':
-        icon = Icons.pets;
-        title = 'Mammals Detection';
-        break;
-      case 'insect':
-      case 'pest':
-        icon = Icons.bug_report;
-        title = 'Pest Detection';
-        break;
-      case 'plant_health':
-      case 'health_plant':
-        icon = Icons.local_florist;
-        title = 'Plant Health Detection';
-        break;
-      case 'weather':
-        icon = Icons.wb_sunny;
-        title = 'Weather Detection';
-        break;
-      case 'wind':
-        icon = Icons.air;
-        title = 'Wind Detection';
-        break;
-      default:
-        icon = Icons.notifications;
-        title = 'Detection';
-    }
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: primaryGreen.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: primaryGreen.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: primaryGreen, size: 24),
-          ),
-          SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: primaryGreen,
-                    fontSize: 14,
-                  ),
-                ),
-                if (detection.description != null) ...[
-                  SizedBox(height: 4),
-                  Text(
-                    detection.description!,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                ],
-                SizedBox(height: 4),
-                Text(
-                  _formatDate(detection.detectedAt),
-                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return DetectionCard(detection: detection);
   }
 
   Widget _buildPlantScreen() {

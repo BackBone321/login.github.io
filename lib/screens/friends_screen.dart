@@ -522,6 +522,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         border: Border.all(color: primaryGreen.withOpacity(0.1)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
             radius: 25,
@@ -541,33 +542,70 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     fontSize: 16,
                   ),
                 ),
-                if (user.bio != null && user.bio!.isNotEmpty)
+                SizedBox(height: 4),
+                Text(
+                  user.email,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (user.bio != null && user.bio!.isNotEmpty) ...[
+                  SizedBox(height: 4),
                   Text(
                     user.bio!,
                     style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                ],
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await _dbService.acceptFriendRequest(request.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Friend request accepted'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryGreen,
+                          foregroundColor: Colors.white,
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        child: Text('Accept'),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          await _dbService.rejectFriendRequest(request.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Friend request declined'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.redAccent),
+                          foregroundColor: Colors.redAccent,
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        child: Text('Decline'),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await _dbService.acceptFriendRequest(request.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Friend request accepted'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGreen,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-            child: Text('Accept'),
           ),
         ],
       ),

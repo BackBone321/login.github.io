@@ -38,6 +38,22 @@ class DatabaseService {
         .map((doc) => doc.exists ? UserModel.fromMap(doc.data()!) : null);
   }
 
+  Stream<List<UserModel>> getAllUsers() {
+    return _firestore.collection('users').snapshots().map(
+          (snapshot) => snapshot.docs
+              .map((doc) => UserModel.fromMap(doc.data()))
+              .toList(),
+        );
+  }
+
+  Stream<List<GroupModel>> getAllGroups() {
+    return _firestore.collection('groups').snapshots().map(
+          (snapshot) => snapshot.docs
+              .map((doc) => GroupModel.fromMap(doc.data()))
+              .toList(),
+        );
+  }
+
   // Friend operations
   Future<void> sendFriendRequest(String friendId) async {
     final currentUserId = _auth.currentUser!.uid;
@@ -206,6 +222,18 @@ class DatabaseService {
     }
   }
 
+  Stream<List<DetectionModel>> getAllDetections() {
+    return _firestore
+        .collection('detections')
+        .orderBy('detectedAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => DetectionModel.fromMap(doc.data()))
+              .toList(),
+        );
+  }
+
   // Message operations
   Future<void> sendMessage(MessageModel message) async {
     await _firestore
@@ -220,7 +248,6 @@ class DatabaseService {
         .collection('messages')
         .where('senderId', isEqualTo: userId)
         .where('receiverId', isEqualTo: otherUserId)
-        .orderBy('timestamp', descending: true)
         .snapshots();
 
     // Get messages where other user is sender and current user is receiver
@@ -228,7 +255,6 @@ class DatabaseService {
         .collection('messages')
         .where('senderId', isEqualTo: otherUserId)
         .where('receiverId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
         .snapshots();
 
     // Combine both streams manually
@@ -282,25 +308,55 @@ class DatabaseService {
   Stream<List<Map<String, dynamic>>> getConversations(String userId) {
     return _firestore
         .collection('messages')
-        .where('receiverId', isEqualTo: userId)
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
           final conversations = <String, Map<String, dynamic>>{};
+
           for (var doc in snapshot.docs) {
             final data = doc.data();
-            final senderId = data['senderId'] as String;
-            if (!conversations.containsKey(senderId)) {
-              conversations[senderId] = {
-                'userId': senderId,
-                'userName': data['senderName'] ?? '',
-                'lastMessage': data['content'] ?? '',
-                'timestamp': data['timestamp'],
+            final senderId = (data['senderId'] ?? '') as String;
+            final receiverId = (data['receiverId'] ?? '') as String;
+
+            if (senderId != userId && receiverId != userId) {
+              continue;
+            }
+
+            final otherUserId = senderId == userId ? receiverId : senderId;
+            if (otherUserId.isEmpty) continue;
+
+            final timestampRaw = data['timestamp'];
+            DateTime timestamp;
+            if (timestampRaw is Timestamp) {
+              timestamp = timestampRaw.toDate();
+            } else if (timestampRaw is String) {
+              timestamp = DateTime.tryParse(timestampRaw) ?? DateTime.now();
+            } else if (timestampRaw is DateTime) {
+              timestamp = timestampRaw;
+            } else {
+              timestamp = DateTime.now();
+            }
+
+            final lastMessage = (data['content'] ?? '') as String;
+            final senderName = (data['senderName'] ?? '') as String;
+
+            final existing = conversations[otherUserId];
+            if (existing == null ||
+                (existing['timestamp'] as DateTime).isBefore(timestamp)) {
+              conversations[otherUserId] = {
+                'userId': otherUserId,
+                'userName': senderName,
+                'lastMessage': lastMessage,
+                'timestamp': timestamp,
                 'unread': 0,
               };
             }
           }
-          return conversations.values.toList();
+
+          final list = conversations.values.toList();
+          list.sort((a, b) =>
+              (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime));
+          return list;
         });
   }
 
@@ -388,13 +444,14 @@ class DatabaseService {
     return _firestore
         .collection('group_messages')
         .where('groupId', isEqualTo: groupId)
-        .orderBy('timestamp', descending: true)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => GroupMessageModel.fromMap(doc.data()))
-              .toList(),
-        );
+        .map((snapshot) {
+      final messages = snapshot.docs
+          .map((doc) => GroupMessageModel.fromMap(doc.data()))
+          .toList();
+      messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return messages;
+    });
   }
 
   // ===== END OF GROUP METHODS =====
