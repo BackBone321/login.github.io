@@ -45,7 +45,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
-    final lightGreen = Color(0xFFE8F5E8);
     final backgroundColor = Color(0xFFF8FFF8);
 
     return Scaffold(

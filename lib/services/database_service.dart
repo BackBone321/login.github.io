@@ -39,7 +39,10 @@ class DatabaseService {
   }
 
   Stream<List<UserModel>> getAllUsers() {
-    return _firestore.collection('users').snapshots().map(
+    return _firestore
+        .collection('users')
+        .snapshots()
+        .map(
           (snapshot) => snapshot.docs
               .map((doc) => UserModel.fromMap(doc.data()))
               .toList(),
@@ -47,7 +50,10 @@ class DatabaseService {
   }
 
   Stream<List<GroupModel>> getAllGroups() {
-    return _firestore.collection('groups').snapshots().map(
+    return _firestore
+        .collection('groups')
+        .snapshots()
+        .map(
           (snapshot) => snapshot.docs
               .map((doc) => GroupModel.fromMap(doc.data()))
               .toList(),
@@ -242,65 +248,80 @@ class DatabaseService {
         .set(message.toMap());
   }
 
+  Future<void> deleteMessage(String messageId) async {
+    await _firestore.collection('messages').doc(messageId).delete();
+  }
+
   Stream<List<MessageModel>> getMessages(String userId, String otherUserId) {
-    // Get messages where current user is sender and other user is receiver
     final stream1 = _firestore
         .collection('messages')
         .where('senderId', isEqualTo: userId)
         .where('receiverId', isEqualTo: otherUserId)
         .snapshots();
 
-    // Get messages where other user is sender and current user is receiver
     final stream2 = _firestore
         .collection('messages')
         .where('senderId', isEqualTo: otherUserId)
         .where('receiverId', isEqualTo: userId)
         .snapshots();
 
-    // Combine both streams manually
-    StreamController<List<MessageModel>> controller =
-        StreamController<List<MessageModel>>.broadcast();
+    final controller = StreamController<List<MessageModel>>();
     QuerySnapshot? snapshot1;
     QuerySnapshot? snapshot2;
+    StreamSubscription<QuerySnapshot>? sub1;
+    StreamSubscription<QuerySnapshot>? sub2;
 
     void updateMessages() {
+      if (controller.isClosed) return;
+
       final allMessages = <MessageModel>[];
 
-      // Add messages from stream1 if available
       if (snapshot1 != null) {
-        for (var doc in snapshot1!.docs) {
+        for (final doc in snapshot1!.docs) {
           final data = doc.data() as Map<String, dynamic>;
           allMessages.add(MessageModel.fromMap(data));
         }
       }
 
-      // Add messages from stream2 if available
       if (snapshot2 != null) {
-        for (var doc in snapshot2!.docs) {
+        for (final doc in snapshot2!.docs) {
           final data = doc.data() as Map<String, dynamic>;
           allMessages.add(MessageModel.fromMap(data));
         }
       }
 
-      // Remove duplicates and sort by timestamp descending
       final uniqueMessages = <String, MessageModel>{};
-      for (var message in allMessages) {
+      for (final message in allMessages) {
         uniqueMessages[message.id] = message;
       }
+
       final sortedMessages = uniqueMessages.values.toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      controller.add(sortedMessages);
+
+      if (!controller.isClosed) {
+        controller.add(sortedMessages);
+      }
     }
 
-    stream1.listen((snapshot) {
-      snapshot1 = snapshot;
-      updateMessages();
-    });
+    controller.onListen = () {
+      sub1 = stream1.listen((snapshot) {
+        snapshot1 = snapshot;
+        updateMessages();
+      });
 
-    stream2.listen((snapshot) {
-      snapshot2 = snapshot;
-      updateMessages();
-    });
+      sub2 = stream2.listen((snapshot) {
+        snapshot2 = snapshot;
+        updateMessages();
+      });
+    };
+
+    controller.onCancel = () async {
+      await sub1?.cancel();
+      await sub2?.cancel();
+      if (!controller.isClosed) {
+        await controller.close();
+      }
+    };
 
     return controller.stream;
   }
@@ -354,8 +375,11 @@ class DatabaseService {
           }
 
           final list = conversations.values.toList();
-          list.sort((a, b) =>
-              (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime));
+          list.sort(
+            (a, b) => (b['timestamp'] as DateTime).compareTo(
+              a['timestamp'] as DateTime,
+            ),
+          );
           return list;
         });
   }
@@ -437,7 +461,30 @@ class DatabaseService {
 
   // Group Message Methods
   Future<void> sendGroupMessage(GroupMessageModel message) async {
-    await _firestore.collection('group_messages').add(message.toMap());
+    await _firestore
+        .collection('group_messages')
+        .doc(message.id)
+        .set(message.toMap());
+  }
+
+  Future<void> deleteGroupMessage(String messageId) async {
+    final docRef = _firestore.collection('group_messages').doc(messageId);
+    final doc = await docRef.get();
+
+    if (doc.exists) {
+      await docRef.delete();
+      return;
+    }
+
+    final query = await _firestore
+        .collection('group_messages')
+        .where('id', isEqualTo: messageId)
+        .limit(1)
+        .get();
+
+    for (final docSnapshot in query.docs) {
+      await docSnapshot.reference.delete();
+    }
   }
 
   Stream<List<GroupMessageModel>> getGroupMessages(String groupId) {
@@ -446,12 +493,12 @@ class DatabaseService {
         .where('groupId', isEqualTo: groupId)
         .snapshots()
         .map((snapshot) {
-      final messages = snapshot.docs
-          .map((doc) => GroupMessageModel.fromMap(doc.data()))
-          .toList();
-      messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      return messages;
-    });
+          final messages = snapshot.docs
+              .map((doc) => GroupMessageModel.fromMap(doc.data()))
+              .toList();
+          messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          return messages;
+        });
   }
 
   // ===== END OF GROUP METHODS =====

@@ -23,6 +23,20 @@ Future<void> _launchVideoCall(BuildContext context, String roomId) async {
   }
 }
 
+String _resolveUserName(UserModel user) {
+  final displayName = user.displayName?.trim();
+  if (displayName != null && displayName.isNotEmpty) {
+    return displayName;
+  }
+
+  final email = user.email.trim();
+  if (email.isNotEmpty) {
+    return email;
+  }
+
+  return 'User';
+}
+
 class EnhancedMessagesScreen extends StatefulWidget {
   const EnhancedMessagesScreen({super.key});
 
@@ -58,7 +72,6 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
   @override
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
-    final lightGreen = Color(0xFFE8F5E8);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -215,11 +228,13 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
                 return _buildEmptyConversations();
               }
+              final conversations = snapshot.data!.toList().reversed.toList();
+
               return ListView.builder(
                 padding: EdgeInsets.all(20),
-                itemCount: snapshot.data!.length,
+                itemCount: conversations.length,
                 itemBuilder: (context, index) {
-                  final conversation = snapshot.data![index];
+                  final conversation = conversations[index];
                   return _buildConversationCard(conversation);
                 },
               );
@@ -312,7 +327,9 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => EnhancedGroupChatScreen(group: group)),
+          MaterialPageRoute(
+            builder: (_) => EnhancedGroupChatScreen(group: group),
+          ),
         );
       },
       child: Container(
@@ -467,36 +484,35 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: friendsSnapshot.data!
-                          .map((friendId) => FutureBuilder<UserModel?>(
-                                future: _dbService.getUser(friendId),
-                                builder: (context, userSnapshot) {
-                                  if (!userSnapshot.hasData) {
-                                    return SizedBox.shrink();
-                                  }
-                                  final friend = userSnapshot.data!;
-                                  final isSelected =
-                                      selectedFriends.contains(friend.uid);
+                          .map(
+                            (friendId) => FutureBuilder<UserModel?>(
+                              future: _dbService.getUser(friendId),
+                              builder: (context, userSnapshot) {
+                                if (!userSnapshot.hasData) {
+                                  return SizedBox.shrink();
+                                }
+                                final friend = userSnapshot.data!;
+                                final isSelected = selectedFriends.contains(
+                                  friend.uid,
+                                );
 
-                                  return CheckboxListTile(
-                                    title: Text(
-                                      friend.displayName ??
-                                          friend.email ??
-                                          'User',
-                                    ),
-                                    value: isSelected,
-                                    onChanged: (bool? value) {
-                                      setState(() {
-                                        if (value == true) {
-                                          selectedFriends.add(friend.uid);
-                                        } else {
-                                          selectedFriends.remove(friend.uid);
-                                        }
-                                      });
-                                    },
-                                    activeColor: Color(0xFF2E7D32),
-                                  );
-                                },
-                              ))
+                                return CheckboxListTile(
+                                  title: Text(_resolveUserName(friend)),
+                                  value: isSelected,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        selectedFriends.add(friend.uid);
+                                      } else {
+                                        selectedFriends.remove(friend.uid);
+                                      }
+                                    });
+                                  },
+                                  activeColor: Color(0xFF2E7D32),
+                                );
+                              },
+                            ),
+                          )
                           .toList(),
                     );
                   },
@@ -527,9 +543,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        'Group created successfully!',
-                      ),
+                      content: Text('Group created successfully!'),
                       backgroundColor: Colors.green,
                       duration: Duration(seconds: 4),
                     ),
@@ -594,7 +608,9 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => EnhancedChatScreen(otherUser: user)),
+          MaterialPageRoute(
+            builder: (_) => EnhancedChatScreen(otherUser: user),
+          ),
         );
       },
       child: Container(
@@ -622,7 +638,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
             SizedBox(
               width: 60,
               child: Text(
-                user.displayName ?? user.email ?? 'User',
+                _resolveUserName(user),
                 style: TextStyle(
                   fontSize: 12,
                   color: primaryGreen,
@@ -652,7 +668,9 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => EnhancedChatScreen(otherUser: user)),
+              MaterialPageRoute(
+                builder: (_) => EnhancedChatScreen(otherUser: user),
+              ),
             );
           },
           child: Container(
@@ -681,7 +699,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user.displayName ?? user.email ?? 'User',
+                        _resolveUserName(user),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: primaryGreen,
@@ -776,9 +794,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.otherUser.displayName ??
-                      widget.otherUser.email ??
-                      'User',
+                  _resolveUserName(widget.otherUser),
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
@@ -790,10 +806,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.call),
-            onPressed: _startPrivateVoiceCall,
-          ),
+          IconButton(icon: Icon(Icons.call), onPressed: _startPrivateVoiceCall),
           IconButton(
             icon: Icon(Icons.videocam),
             onPressed: _startPrivateVideoCall,
@@ -866,11 +879,13 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                   );
                 }
 
-                final messages = snapshot.data!.reversed.toList();
+                final messages = List<MessageModel>.from(snapshot.data!)
+                  ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (_scrollController.hasClients) {
                     _scrollController.animateTo(
-                      0,
+                      _scrollController.position.maxScrollExtent,
                       duration: Duration(milliseconds: 300),
                       curve: Curves.easeOut,
                     );
@@ -879,7 +894,6 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
 
                 return ListView.builder(
                   controller: _scrollController,
-                  reverse: true,
                   padding: EdgeInsets.all(16),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
@@ -914,8 +928,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                 ),
                 Expanded(
                   child: Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                     decoration: BoxDecoration(
                       color: lightGreen,
                       borderRadius: BorderRadius.circular(24),
@@ -928,8 +941,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                           color: primaryGreen.withOpacity(0.6),
                         ),
                         border: InputBorder.none,
-                        contentPadding:
-                            EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
                       ),
                       maxLines: null,
                       textCapitalization: TextCapitalization.sentences,
@@ -949,9 +961,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                     onPressed: () async {
                       if (_messageController.text.trim().isNotEmpty) {
                         final message = MessageModel(
-                          id: DateTime.now()
-                              .millisecondsSinceEpoch
-                              .toString(),
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
                           senderId: _auth.currentUser!.uid,
                           receiverId: widget.otherUser.uid,
                           senderName:
@@ -979,56 +989,105 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
   Widget _buildMessageBubble(MessageModel message, bool isMe) {
     final primaryGreen = Color(0xFF2E7D32);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      child: Align(
-        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: isMe
-                  ? primaryGreen
-                  : Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(20),
+    return GestureDetector(
+      onLongPress: () => _handleMessageLongPress(message, isMe),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        child: Align(
+          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Align(
-                    alignment:
-                        isMe ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Text(
-                      message.content,
-                      style: TextStyle(
-                        color: isMe ? Colors.white : Colors.black87,
-                        fontSize: 15,
-                        height: 1.3,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: isMe ? primaryGreen : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Align(
+                      alignment: isMe
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Text(
+                        message.content,
+                        style: TextStyle(
+                          color: isMe ? Colors.white : Colors.black87,
+                          fontSize: 15,
+                          height: 1.3,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    _formatMessageTime(message.timestamp),
-                    style: TextStyle(
-                      color: isMe
-                          ? Colors.white.withOpacity(0.7)
-                          : Colors.grey[600],
-                      fontSize: 10,
+                    SizedBox(height: 2),
+                    Text(
+                      _formatMessageTime(message.timestamp),
+                      style: TextStyle(
+                        color: isMe
+                            ? Colors.white.withOpacity(0.7)
+                            : Colors.grey[600],
+                        fontSize: 10,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleMessageLongPress(MessageModel message, bool isMe) async {
+    if (!isMe) return;
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete message?'),
+        content: Text('This will remove the message for everyone in the chat.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      try {
+        await _dbService.deleteMessage(message.id);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Message deleted'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete message'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   String _formatMessageTime(DateTime timestamp) {
@@ -1053,7 +1112,8 @@ class EnhancedGroupChatScreen extends StatefulWidget {
   const EnhancedGroupChatScreen({super.key, required this.group});
 
   @override
-  _EnhancedGroupChatScreenState createState() => _EnhancedGroupChatScreenState();
+  _EnhancedGroupChatScreenState createState() =>
+      _EnhancedGroupChatScreenState();
 }
 
 class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
@@ -1078,9 +1138,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
 
     if (isCreator) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Group creator cannot leave the group.'),
-        ),
+        SnackBar(content: Text('Group creator cannot leave the group.')),
       );
       return;
     }
@@ -1112,11 +1170,9 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
         widget.group.adminIds.remove(currentUid);
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('You left the group'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('You left the group')));
 
       Navigator.pop(context);
     }
@@ -1126,7 +1182,8 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
     final lightGreen = Color(0xFFE8F5E8);
-    final isAdmin = widget.group.adminIds.contains(_auth.currentUser!.uid) ||
+    final isAdmin =
+        widget.group.adminIds.contains(_auth.currentUser!.uid) ||
         widget.group.creatorId == _auth.currentUser!.uid;
     final isCreator = widget.group.creatorId == _auth.currentUser!.uid;
 
@@ -1165,10 +1222,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.call),
-            onPressed: _startGroupVoiceCall,
-          ),
+          IconButton(icon: Icon(Icons.call), onPressed: _startGroupVoiceCall),
           IconButton(
             icon: Icon(Icons.videocam),
             onPressed: _startGroupVideoCall,
@@ -1225,10 +1279,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                     children: [
                       Icon(Icons.exit_to_app, color: Colors.red),
                       SizedBox(width: 8),
-                      Text(
-                        'Leave Group',
-                        style: TextStyle(color: Colors.red),
-                      ),
+                      Text('Leave Group', style: TextStyle(color: Colors.red)),
                     ],
                   ),
                 ),
@@ -1274,11 +1325,13 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                     );
                   }
 
-                  final messages = snapshot.data!.reversed.toList();
+                  final messages = List<GroupMessageModel>.from(snapshot.data!)
+                    ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (_scrollController.hasClients) {
                       _scrollController.animateTo(
-                        0,
+                        _scrollController.position.maxScrollExtent,
                         duration: Duration(milliseconds: 300),
                         curve: Curves.easeOut,
                       );
@@ -1287,7 +1340,6 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
 
                   return ListView.builder(
                     controller: _scrollController,
-                    reverse: true,
                     padding: EdgeInsets.all(16),
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
@@ -1421,7 +1473,9 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                       );
                       final canManage =
                           widget.group.creatorId == _auth.currentUser!.uid ||
-                          (widget.group.adminIds.contains(_auth.currentUser!.uid) &&
+                          (widget.group.adminIds.contains(
+                                _auth.currentUser!.uid,
+                              ) &&
                               !isCreator &&
                               !isAdmin);
 
@@ -1434,9 +1488,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                             size: 20,
                           ),
                         ),
-                        title: Text(
-                          member.displayName ?? member.email ?? 'User',
-                        ),
+                        title: Text(_resolveUserName(member)),
                         subtitle: Row(
                           children: [
                             if (isCreator)
@@ -1569,15 +1621,15 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
               stream: _dbService.getFriends(_auth.currentUser!.uid),
               builder: (context, friendsSnapshot) {
                 if (!friendsSnapshot.hasData || friendsSnapshot.data!.isEmpty) {
-                  return Center(
-                    child: Text('No friends to add'),
-                  );
+                  return Center(child: Text('No friends to add'));
                 }
 
                 // Filter out existing members
-                final availableFriends = friendsSnapshot.data!.where(
-                  (friendId) => !widget.group.memberIds.contains(friendId),
-                ).toList();
+                final availableFriends = friendsSnapshot.data!
+                    .where(
+                      (friendId) => !widget.group.memberIds.contains(friendId),
+                    )
+                    .toList();
 
                 if (availableFriends.isEmpty) {
                   return Center(
@@ -1597,10 +1649,8 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                         final isSelected = selectedFriends.contains(friend.uid);
 
                         return CheckboxListTile(
-                          title: Text(
-                            friend.displayName ?? friend.email ?? 'User',
-                          ),
-                          subtitle: Text(friend.email ?? ''),
+                          title: Text(_resolveUserName(friend)),
+                          subtitle: Text(friend.email),
                           value: isSelected,
                           onChanged: (bool? value) {
                             setState(() {
@@ -1676,7 +1726,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
       builder: (context) => AlertDialog(
         title: Text('Remove Member'),
         content: Text(
-          'Are you sure you want to remove ${member.displayName ?? member.email} from this group?',
+          'Are you sure you want to remove ${_resolveUserName(member)} from this group?',
         ),
         actions: [
           TextButton(
@@ -1703,9 +1753,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '${member.displayName ?? member.email} removed from group',
-          ),
+          content: Text('${_resolveUserName(member)} removed from group'),
         ),
       );
     }
@@ -1718,11 +1766,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
         widget.group.adminIds.add(member.uid);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${member.displayName ?? member.email} is now an admin',
-          ),
-        ),
+        SnackBar(content: Text('${_resolveUserName(member)} is now an admin')),
       );
     } else {
       await _dbService.removeGroupAdmin(widget.group.id, member.uid);
@@ -1731,9 +1775,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '${member.displayName ?? member.email} is no longer an admin',
-          ),
+          content: Text('${_resolveUserName(member)} is no longer an admin'),
         ),
       );
     }
@@ -1809,69 +1851,124 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
   Widget _buildGroupMessageBubble(GroupMessageModel message, bool isMe) {
     final primaryGreen = Color(0xFF2E7D32);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      child: Align(
-        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: isMe
-                  ? primaryGreen
-                  : Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(20),
+    return GestureDetector(
+      onLongPress: () => _handleGroupMessageLongPress(message, isMe),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        child: Align(
+          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Column(
-                crossAxisAlignment:
-                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!isMe)
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 2),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: isMe ? primaryGreen : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Column(
+                  crossAxisAlignment: isMe
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!isMe)
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          message.senderName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isMe ? Colors.white : primaryGreen,
+                          ),
+                        ),
+                      ),
+                    Align(
+                      alignment: isMe
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Text(
-                        message.senderName,
+                        message.content,
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isMe ? Colors.white : primaryGreen,
+                          color: isMe ? Colors.white : Colors.black87,
+                          fontSize: 15,
+                          height: 1.3,
                         ),
                       ),
                     ),
-                  Align(
-                    alignment:
-                        isMe ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Text(
-                      message.content,
+                    SizedBox(height: 2),
+                    Text(
+                      _formatMessageTime(message.timestamp),
                       style: TextStyle(
-                        color: isMe ? Colors.white : Colors.black87,
-                        fontSize: 15,
-                        height: 1.3,
+                        color: isMe
+                            ? Colors.white.withOpacity(0.7)
+                            : Colors.grey[600],
+                        fontSize: 10,
                       ),
                     ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    _formatMessageTime(message.timestamp),
-                    style: TextStyle(
-                      color: isMe
-                          ? Colors.white.withOpacity(0.7)
-                          : Colors.grey[600],
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleGroupMessageLongPress(
+    GroupMessageModel message,
+    bool isMe,
+  ) async {
+    if (!isMe) return;
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete message?'),
+        content: Text(
+          'This will remove the message for everyone in the group.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      try {
+        await _dbService.deleteGroupMessage(message.id);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Message deleted'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete message'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   String _formatMessageTime(DateTime timestamp) {
