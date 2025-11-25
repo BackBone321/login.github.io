@@ -1,43 +1,64 @@
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class EmailService {
-  // IMPORTANT: Get these from https://dashboard.emailjs.com/admin/account
-  // NOT from Firebase - these are EmailJS credentials
-  static const String serviceId = 'your_emailjs_service_id';  // From EmailJS dashboard → Email Services
-  static const String templateId = 'your_emailjs_template_id'; // From EmailJS dashboard → Email Templates  
-  static const String userId = 'your_emailjs_public_key';     // From EmailJS dashboard → Account → General → Public Key
+  static final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
-  static Future<bool> sendOTPEmail(String toEmail, String otpCode) async {
+  static Future<bool> sendOTPEmail(
+    String toEmail,
+    String otpCode, {
+    String purpose = 'auth_verification',
+  }) async {
     try {
-      final response = await http.post(
-        Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'service_id': serviceId,
-          'template_id': templateId,
-          'user_id': userId,
-          'template_params': {
-            'to_email': toEmail,
-            'otp_code': otpCode,
-            'app_name': 'AGRI GUARD',
-            'expiry_time': '10 minutes',
-          },
-        }),
-      );
+      final callable = _functions.httpsCallable('sendOTP');
+      final response = await callable.call(<String, dynamic>{
+        'email': toEmail,
+        'code': otpCode,
+        'purpose': purpose,
+      });
 
-      print('📧 EmailJS Response: ${response.statusCode}');
+      final data = response.data;
+      final wasSuccessful =
+          data is Map && (data['success'] == true || data['status'] == 'ok');
 
-      if (response.statusCode == 200) {
-        print('✅ Email sent successfully to $toEmail');
+      if (wasSuccessful) {
+        print('✅ Gmail OTP sent to $toEmail');
         return true;
-      } else {
-        print('❌ Email failed with status: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        return false;
       }
+
+      print('❌ Gmail OTP failed with payload: $data');
+      return false;
     } catch (e) {
-      print('❌ Error sending email: $e');
+      print('❌ Error calling sendOTP function: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> sendInviteEmail(
+    String toEmail,
+    String inviteCode, {
+    String invitedBy = 'Admin',
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('sendInvitation');
+      final response = await callable.call(<String, dynamic>{
+        'email': toEmail,
+        'code': inviteCode,
+        'invitedBy': invitedBy,
+      });
+
+      final data = response.data;
+      final wasSuccessful =
+          data is Map && (data['success'] == true || data['status'] == 'ok');
+
+      if (wasSuccessful) {
+        print('✅ Invitation email sent to $toEmail');
+        return true;
+      }
+
+      print('❌ Invitation email failed with payload: $data');
+      return false;
+    } catch (e) {
+      print('❌ Error calling sendInvitation function: $e');
       return false;
     }
   }

@@ -5,6 +5,7 @@ import '../widgets/detection_card.dart';
 import '../services/weather_service.dart';
 import '../models/weather_model.dart';
 import 'admin_messages_screen.dart';
+import 'admin_animal_detection_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -41,48 +42,513 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    final primaryGreen = const Color(0xFF2E7D32);
+    final surface = const Color(0xFFF5F7FB);
+    final deepGreen = const Color(0xFF1B4332);
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: primaryGreen,
-        title: const Text('Admin Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.message),
-            tooltip: 'Messages',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AdminMessagesScreen(),
+      backgroundColor: surface,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(88),
+        child: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          centerTitle: false,
+          titleSpacing: 24,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Admin Control Center',
+                style: TextStyle(
+                  color: deepGreen,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 20,
                 ),
-              );
-            },
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Web dashboard for live monitoring & collaboration',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 13,
+                ),
+              ),
+            ],
           ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Insects'),
-            Tab(text: 'Animals'),
-            Tab(text: 'Plant Health'),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminAnimalDetectionScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.pets_outlined),
+              label: const Text('Animal module'),
+              style: TextButton.styleFrom(
+                foregroundColor: deepGreen,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminMessagesScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: const Text('Open chat workspace'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF2E7D32),
+              ),
+            ),
+            const SizedBox(width: 16),
           ],
         ),
       ),
-      body: Column(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 1100;
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isWide ? 48 : 20,
+                vertical: 24,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeroBanner(context, isWide),
+                  const SizedBox(height: 24),
+                  _buildStatsSection(),
+                  const SizedBox(height: 24),
+                  _buildEnvironmentRow(isWide),
+                  const SizedBox(height: 24),
+                  _buildMonitoringSection(isWide),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroBanner(BuildContext context, bool isWide) {
+    final weather = _currentWeather;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isWide ? 32 : 24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2E7D32), Color(0xFF1B4332)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(0.25),
+            blurRadius: 30,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+          Text(
+            'Web-first incident response',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.85),
+              fontSize: 16,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Monitor detections & coordinate teams in real-time.',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 20,
+            runSpacing: 16,
+            children: [
+              _buildHeroStat(
+                icon: weather?.weatherIcon ?? Icons.wb_sunny_outlined,
+                title: 'Current weather',
+                value: weather != null
+                    ? '${weather.temperatureString} · ${weather.condition}'
+                    : 'Fetching latest data…',
+              ),
+              _buildHeroStat(
+                icon: Icons.air,
+                title: 'Wind & humidity',
+                value: weather != null
+                    ? '${weather.windSpeedString} · ${weather.humidityString}'
+                    : 'Syncing sensors…',
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AdminMessagesScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.forum_outlined),
+                label: const Text('Launch chat workspace'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF1B4332),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _tabController.animateTo(0),
+                icon: const Icon(Icons.insights_outlined, color: Colors.white),
+                label: const Text(
+                  'View detections',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white54),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroStat({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 220),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _buildWeatherCard(_currentWeather)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildWindCard(_currentWeather)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
-          Expanded(
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsSection() {
+    final accent = const Color(0xFF2E7D32);
+
+    return StreamBuilder<List<DetectionModel>>(
+      stream: _dbService.getAllDetections(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 140,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final detections = snapshot.data ?? [];
+        final insects = _countByTypes(detections, ['insect', 'pest']);
+        final animals = _countByTypes(detections, ['cow', 'mammal', 'mammals']);
+        final plant = _countByTypes(detections, ['plant_health', 'health_plant']);
+        final last24h = detections
+            .where(
+              (d) => DateTime.now().difference(d.detectedAt).inHours < 24,
+            )
+            .length;
+        final latest = detections.isNotEmpty ? detections.first.detectedAt : null;
+
+        final cards = [
+          _buildMetricCard(
+            title: 'Total alerts',
+            value: '${detections.length}',
+            subtitle: last24h > 0
+                ? '$last24h in the last 24h'
+                : 'Awaiting new signals',
+            icon: Icons.timeline_outlined,
+            color: accent,
+          ),
+          _buildMetricCard(
+            title: 'Insect activity',
+            value: '$insects',
+            subtitle: _formatRelativeTime(latest),
+            icon: Icons.bug_report_outlined,
+            color: const Color(0xFF4CAF50),
+          ),
+          _buildMetricCard(
+            title: 'Animal detections',
+            value: '$animals',
+            subtitle: animals == 0
+                ? 'All livestock calm'
+                : 'Review recent movements',
+            icon: Icons.pets_outlined,
+            color: const Color(0xFF8E24AA),
+          ),
+          _buildMetricCard(
+            title: 'Plant health alerts',
+            value: '$plant',
+            subtitle: plant == 0
+                ? 'No stress signals'
+                : 'Check agronomist feed',
+            icon: Icons.grass_outlined,
+            color: const Color(0xFF1976D2),
+          ),
+        ];
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: cards,
+        );
+      },
+    );
+  }
+
+  Widget _buildMetricCard({
+    required String title,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 240, maxWidth: 320),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnvironmentRow(bool isWide) {
+    if (isWide) {
+      return Row(
+        children: [
+          Expanded(child: _buildWeatherCard(_currentWeather)),
+          const SizedBox(width: 24),
+          Expanded(child: _buildWindCard(_currentWeather)),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        _buildWeatherCard(_currentWeather),
+        const SizedBox(height: 16),
+        _buildWindCard(_currentWeather),
+      ],
+    );
+  }
+
+  Widget _buildMonitoringSection(bool isWide) {
+    final accent = const Color(0xFF2E7D32);
+    final deepGreen = const Color(0xFF1B4332);
+    final panelHeight = isWide ? 520.0 : 460.0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Detection streams',
+                      style: TextStyle(
+                        color: deepGreen,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Toggle between categories to review incoming alerts.',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => _tabController.animateTo(
+                  (_tabController.index + 1) % _tabController.length,
+                ),
+                icon: const Icon(Icons.swap_horiz),
+                tooltip: 'Next tab',
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              labelColor: Colors.white,
+              unselectedLabelColor: deepGreen,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+              tabs: const [
+                Tab(
+                  icon: Icon(Icons.bug_report_outlined),
+                  text: 'Insects',
+                ),
+                Tab(
+                  icon: Icon(Icons.pets_outlined),
+                  text: 'Animals',
+                ),
+                Tab(
+                  icon: Icon(Icons.local_florist_outlined),
+                  text: 'Plant health',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: panelHeight,
             child: TabBarView(
               controller: _tabController,
               children: [
@@ -95,6 +561,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         ],
       ),
     );
+  }
+
+  int _countByTypes(List<DetectionModel> detections, List<String> types) {
+    return detections.where((detection) => types.contains(detection.type)).length;
+  }
+
+  String _formatRelativeTime(DateTime? dateTime) {
+    if (dateTime == null) return 'No events yet';
+    final diff = DateTime.now().difference(dateTime);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 
   Widget _buildCategoryView(List<String> types) {
@@ -132,6 +611,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
+          physics: const BouncingScrollPhysics(),
+          primary: false,
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             return DetectionCard(detection: filtered[index]);
@@ -142,50 +623,71 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 
   Widget _buildWeatherCard(WeatherModel? weather) {
-    final primaryGreen = const Color(0xFF2E7D32);
+    final accent = const Color(0xFF2E7D32);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: primaryGreen.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: [
+            accent.withOpacity(0.12),
+            Colors.white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: accent.withOpacity(0.15)),
       ),
       child: Row(
         children: [
-          Icon(
-            weather?.weatherIcon ?? Icons.wb_sunny,
-            color: weather?.weatherColor ?? primaryGreen,
-            size: 32,
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Icon(
+              weather?.weatherIcon ?? Icons.wb_sunny_outlined,
+              color: weather?.weatherColor ?? accent,
+              size: 32,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Weather',
+                  'Weather overview',
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: primaryGreen,
+                    fontSize: 15,
+                    color: Colors.grey[700],
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   weather != null
-                      ? '${weather.condition}, ${weather.temperatureString}'
-                      : 'Loading...',
+                      ? '${weather.temperatureString} • ${weather.condition}'
+                      : 'Fetching latest data…',
                   style: TextStyle(
-                    color: primaryGreen.withOpacity(0.7),
-                    fontSize: 13,
+                    color: accent,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
                   ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  weather?.windDirection ?? 'Awaiting sensor feed',
+                  style: TextStyle(color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -196,53 +698,63 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 
   Widget _buildWindCard(WeatherModel? weather) {
-    final primaryGreen = const Color(0xFF2E7D32);
-    final lightGreen = const Color(0xFFC8E6C9);
+    final deepGreen = const Color(0xFF1B4332);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: lightGreen,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: primaryGreen, width: 1),
+        borderRadius: BorderRadius.circular(24),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.air, color: primaryGreen, size: 32),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Wind & Humidity',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: primaryGreen,
-                  ),
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: deepGreen.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  weather != null
-                      ? 'Speed: ${weather.windSpeedString}, ${weather.windDirection}'
-                      : 'Loading...',
-                  style: TextStyle(
-                    color: primaryGreen.withOpacity(0.7),
-                    fontSize: 13,
-                  ),
+                child: Icon(Icons.air, color: deepGreen),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Wind & humidity',
+                style: TextStyle(
+                  color: deepGreen,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 2),
-                if (weather != null)
-                  Text(
-                    'Humidity: ${weather.humidityString}',
-                    style: TextStyle(
-                      color: primaryGreen.withOpacity(0.6),
-                      fontSize: 12,
-                    ),
-                  ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            weather != null
+                ? '${weather.windSpeedString} ${weather.windDirection}'
+                : 'Syncing telemetry…',
+            style: TextStyle(
+              color: deepGreen,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            weather != null
+                ? 'Humidity · ${weather.humidityString}'
+                : 'Humidity data pending',
+            style: TextStyle(color: Colors.grey[600]),
           ),
         ],
       ),

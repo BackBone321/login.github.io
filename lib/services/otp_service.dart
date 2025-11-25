@@ -7,52 +7,54 @@ import 'email_service.dart';
 
 class OTPService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  // Remove Firebase Auth instance if not needed
-  // final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Generate a 6-digit OTP code
   String _generateOTP() {
     final random = Random();
     return (100000 + random.nextInt(900000)).toString();
   }
 
-  // Send OTP for password change
   Future<String> sendOTPForPasswordChange(String email) async {
+    return _createAndSendOTP(email, 'change_password');
+  }
+
+  Future<String> sendOTPForLogin(String email) async {
+    return _createAndSendOTP(email, 'login_verification');
+  }
+
+  Future<String> _createAndSendOTP(String email, String purpose) async {
     try {
-      // Generate OTP
       final code = _generateOTP();
       final otpId = DateTime.now().millisecondsSinceEpoch.toString();
       final now = DateTime.now();
       final expiresAt = now.add(Duration(minutes: 10));
 
-      // Create OTP model
       final otp = OTPModel(
         id: otpId,
         email: email,
         code: code,
-        purpose: 'change_password',
+        purpose: purpose,
         createdAt: now,
         expiresAt: expiresAt,
       );
 
-      // Save to Firestore
       await _firestore.collection('otps').doc(otpId).set(otp.toMap());
 
-      // Send email via EmailJS
-      final emailSent = await EmailService.sendOTPEmail(email, code);
+      final emailSent = await EmailService.sendOTPEmail(
+        email,
+        code,
+        purpose: purpose,
+      );
 
       if (emailSent) {
         print('✅ OTP email sent to $email: $code');
-        return code;
       } else {
-        // Fallback: show OTP in console
         print('❌ Email failed - OTP for $email: $code');
         print('📱 Please check the console for the OTP code during testing');
-        return code; // Still return code for testing
       }
+
+      return code;
     } catch (e) {
       print('Error sending OTP: $e');
-      // For testing, still generate and return OTP even if email fails
       final code = _generateOTP();
       print('🔄 Fallback OTP for $email: $code');
       return code;
@@ -115,13 +117,15 @@ class OTPService {
   }
 
   // Resend OTP
-  Future<String> resendOTP(String email) async {
+  Future<String> resendOTP(
+    String email, {
+    String purpose = 'change_password',
+  }) async {
     try {
-      // Invalidate old OTPs for this email and purpose
       final oldOtps = await _firestore
           .collection('otps')
           .where('email', isEqualTo: email)
-          .where('purpose', isEqualTo: 'change_password')
+          .where('purpose', isEqualTo: purpose)
           .where('isUsed', isEqualTo: false)
           .get();
 
@@ -129,8 +133,7 @@ class OTPService {
         await doc.reference.update({'isUsed': true});
       }
 
-      // Generate and send new OTP
-      return await sendOTPForPasswordChange(email);
+      return _createAndSendOTP(email, purpose);
     } catch (e) {
       print('Error resending OTP: $e');
       throw Exception('Failed to resend OTP: $e');

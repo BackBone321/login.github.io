@@ -156,11 +156,12 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
       children: [
         // Quick Friends Access
         Container(
-          height: 120,
+          width: double.infinity,
           padding: EdgeInsets.symmetric(vertical: 16),
           color: Color(0xFFE8F5E8).withOpacity(0.3),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
@@ -174,7 +175,8 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                 ),
               ),
               SizedBox(height: 12),
-              Expanded(
+              SizedBox(
+                height: 92,
                 child: StreamBuilder<List<String>>(
                   stream: _dbService.getFriends(_auth.currentUser!.uid),
                   builder: (context, friendsSnapshot) {

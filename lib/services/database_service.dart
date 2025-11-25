@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
@@ -8,10 +9,20 @@ import '../models/detection_model.dart';
 import '../models/message_model.dart';
 import '../models/group_model.dart';
 import '../models/group_message_model.dart';
+import '../models/invite_model.dart';
 
 class DatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final Random _random = Random.secure();
+
+  String _generateInviteCode([int length = 8]) {
+    const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return List.generate(
+      length,
+      (_) => characters[_random.nextInt(characters.length)],
+    ).join();
+  }
 
   // User operations
   Future<void> createUser(UserModel user) async {
@@ -500,6 +511,54 @@ class DatabaseService {
           return messages;
         });
   }
+
+  // ===== INVITE METHODS =====
+  Future<InviteModel> createInvite(
+    String email, {
+    String? message,
+    Duration validity = const Duration(days: 7),
+  }) async {
+    final trimmedEmail = email.trim().toLowerCase();
+    final docRef = _firestore.collection('invites').doc();
+    final now = DateTime.now();
+    final invite = InviteModel(
+      id: docRef.id,
+      email: trimmedEmail,
+      invitedBy: _auth.currentUser?.uid ?? 'admin',
+      code: _generateInviteCode(),
+      status: 'pending',
+      createdAt: now,
+      expiresAt: now.add(validity),
+      message: message,
+    );
+
+    await docRef.set(invite.toMap());
+    return invite;
+  }
+
+  Stream<List<InviteModel>> getInvites({bool onlyActive = false}) {
+    Query<Map<String, dynamic>> query = _firestore
+        .collection('invites')
+        .orderBy('createdAt', descending: true);
+
+    if (onlyActive) {
+      query = query.where('status', isEqualTo: 'pending');
+    }
+
+    return query.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => InviteModel.fromMap(doc.data())).toList(),
+    );
+  }
+
+  Future<void> updateInviteStatus(String inviteId, String status) async {
+    await _firestore.collection('invites').doc(inviteId).update({
+      'status': status,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  // ===== END INVITE METHODS =====
 
   // ===== END OF GROUP METHODS =====
 }

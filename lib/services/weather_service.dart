@@ -10,6 +10,7 @@ class WeatherService {
   Timer? _weatherTimer;
   final StreamController<WeatherModel> _weatherController =
       StreamController<WeatherModel>.broadcast();
+  bool _isMonitoring = false;
 
   Stream<WeatherModel> get weatherStream => _weatherController.stream;
 
@@ -18,6 +19,8 @@ class WeatherService {
 
   // Start weather monitoring
   void startWeatherMonitoring() {
+    if (_isMonitoring) return;
+    _isMonitoring = true;
     _updateWeather(); // Initial update
 
     // Update weather every 30 seconds for real-time feel
@@ -28,8 +31,10 @@ class WeatherService {
 
   // Stop weather monitoring
   void stopWeatherMonitoring() {
+    if (!_isMonitoring) return;
     _weatherTimer?.cancel();
-    _weatherController.close();
+    _weatherTimer = null;
+    _isMonitoring = false;
   }
 
   void _updateWeather() {
