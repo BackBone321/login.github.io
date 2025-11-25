@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class UserModel {
   final String uid;
   final String email;
@@ -6,6 +8,8 @@ class UserModel {
   final bool isAdmin;
   final String? bio;
   final DateTime createdAt;
+  final bool isOnline;
+  final DateTime? lastSeen;
 
   UserModel({
     required this.uid,
@@ -15,6 +19,8 @@ class UserModel {
     this.isAdmin = false,
     this.bio,
     required this.createdAt,
+    this.isOnline = false,
+    this.lastSeen,
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +32,8 @@ class UserModel {
       'isAdmin': isAdmin,
       'bio': bio,
       'createdAt': createdAt.toIso8601String(),
+      'isOnline': isOnline,
+      'lastSeen': lastSeen?.toIso8601String(),
     };
   }
 
@@ -37,10 +45,19 @@ class UserModel {
       photoUrl: map['photoUrl'],
       isAdmin: map['isAdmin'] ?? false,
       bio: map['bio'],
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'])
-          : DateTime.now(),
+      createdAt: _parseDate(map['createdAt']) ?? DateTime.now(),
+      isOnline: map['isOnline'] ?? false,
+      lastSeen: _parseDate(map['lastSeen']),
     );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 }
 

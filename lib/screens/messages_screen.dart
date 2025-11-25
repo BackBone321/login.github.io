@@ -37,6 +37,28 @@ String _resolveUserName(UserModel user) {
   return 'User';
 }
 
+bool _isUserOnline(UserModel user) {
+  if (user.isOnline) return true;
+  final lastSeen = user.lastSeen;
+  if (lastSeen == null) return false;
+  return DateTime.now().difference(lastSeen).inMinutes < 2;
+}
+
+String _formatRelativeTime(DateTime date) {
+  final diff = DateTime.now().difference(date);
+  if (diff.inSeconds < 60) return 'just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  return '${date.day}/${date.month}/${date.year}';
+}
+
+String _presenceLabel(UserModel user) {
+  if (_isUserOnline(user)) return 'Online';
+  if (user.lastSeen == null) return 'Offline';
+  return 'Last seen ${_formatRelativeTime(user.lastSeen!)}';
+}
+
 class EnhancedMessagesScreen extends StatefulWidget {
   const EnhancedMessagesScreen({super.key});
 
@@ -176,7 +198,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
               ),
               SizedBox(height: 12),
               SizedBox(
-                height: 92,
+                height: 110,
                 child: StreamBuilder<List<String>>(
                   stream: _dbService.getFriends(_auth.currentUser!.uid),
                   builder: (context, friendsSnapshot) {
@@ -201,8 +223,8 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                       itemCount: friendsSnapshot.data!.length,
                       itemBuilder: (context, index) {
                         final friendId = friendsSnapshot.data![index];
-                        return FutureBuilder<UserModel?>(
-                          future: _dbService.getUser(friendId),
+                        return StreamBuilder<UserModel?>(
+                          stream: _dbService.getUserStream(friendId),
                           builder: (context, userSnapshot) {
                             if (!userSnapshot.hasData) return SizedBox.shrink();
                             return _buildFriendAvatar(userSnapshot.data!);
@@ -605,6 +627,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
 
   Widget _buildFriendAvatar(UserModel user) {
     final primaryGreen = Color(0xFF2E7D32);
+    final isOnline = _isUserOnline(user);
 
     return GestureDetector(
       onTap: () {
@@ -619,22 +642,32 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
         margin: EdgeInsets.only(right: 16),
         child: Column(
           children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: primaryGreen.withOpacity(0.2),
-                  width: 2,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: primaryGreen.withOpacity(0.2),
+                      width: 2,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 28,
+                    backgroundColor: primaryGreen,
+                    child: Icon(Icons.person, color: Colors.white, size: 24),
+                  ),
                 ),
-              ),
-              child: CircleAvatar(
-                radius: 28,
-                backgroundColor: primaryGreen,
-                child: Icon(Icons.person, color: Colors.white, size: 24),
-              ),
+                Positioned(
+                  bottom: -2,
+                  right: -2,
+                  child: _buildStatusDot(isOnline),
+                ),
+              ],
             ),
             SizedBox(height: 8),
             SizedBox(
@@ -651,8 +684,28 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                 textAlign: TextAlign.center,
               ),
             ),
+            Text(
+              isOnline ? 'Online' : 'Offline',
+              style: TextStyle(
+                fontSize: 10,
+                color: isOnline ? Colors.green : Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusDot(bool isOnline) {
+    return Container(
+      width: 14,
+      height: 14,
+      decoration: BoxDecoration(
+        color: isOnline ? Colors.green : Colors.grey,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
       ),
     );
   }
@@ -661,11 +714,12 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
     final primaryGreen = Color(0xFF2E7D32);
     final userId = conversation['userId'] as String;
 
-    return FutureBuilder<UserModel?>(
-      future: _dbService.getUser(userId),
+    return StreamBuilder<UserModel?>(
+      stream: _dbService.getUserStream(userId),
       builder: (context, userSnapshot) {
         if (!userSnapshot.hasData) return SizedBox.shrink();
         final user = userSnapshot.data!;
+        final online = _isUserOnline(user);
         return InkWell(
           onTap: () {
             Navigator.push(
@@ -691,22 +745,56 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
             ),
             child: Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: primaryGreen,
-                  child: Icon(Icons.person, color: Colors.white),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: primaryGreen,
+                      child: Icon(Icons.person, color: Colors.white),
+                    ),
+                    Positioned(
+                      bottom: -2,
+                      right: -2,
+                      child: _buildStatusDot(online),
+                    ),
+                  ],
                 ),
                 SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _resolveUserName(user),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: primaryGreen,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            online ? 'Online' : 'Offline',
+                            style: TextStyle(
+                              color: online ? Colors.green : Colors.grey[500],
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 4),
                       Text(
-                        _resolveUserName(user),
+                        _presenceLabel(user),
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: primaryGreen,
+                          color: online ? Colors.green : Colors.grey[600],
+                          fontSize: 12,
                         ),
                       ),
+                      SizedBox(height: 4),
                       Text(
                         conversation['lastMessage'] ?? '',
                         style: TextStyle(color: Colors.grey[600]),
@@ -716,9 +804,11 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                     ],
                   ),
                 ),
+                SizedBox(width: 8),
                 Text(
                   _formatMessageTime(conversation['timestamp']),
                   style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                  textAlign: TextAlign.right,
                 ),
               ],
             ),
@@ -785,27 +875,41 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
       appBar: AppBar(
         backgroundColor: primaryGreen,
         elevation: 0,
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.white.withOpacity(0.2),
-              child: Icon(Icons.person, color: Colors.white, size: 20),
-            ),
-            SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        title: StreamBuilder<UserModel?>(
+          stream: _dbService.getUserStream(widget.otherUser.uid),
+          builder: (context, snapshot) {
+            final user = snapshot.data ?? widget.otherUser;
+            final online = _isUserOnline(user);
+            return Row(
               children: [
-                Text(
-                  _resolveUserName(widget.otherUser),
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                CircleAvatar(
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  child: Icon(Icons.person, color: Colors.white, size: 20),
                 ),
-                Text(
-                  'Online',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+                SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _resolveUserName(user),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      _presenceLabel(user),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: online ? Colors.white : Colors.white70,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
+            );
+          },
         ),
         actions: [
           IconButton(icon: Icon(Icons.call), onPressed: _startPrivateVoiceCall),

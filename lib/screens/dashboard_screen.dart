@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,28 +20,51 @@ class DashboardScreen extends StatefulWidget {
   _DashboardScreenState createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with WidgetsBindingObserver {
   int _currentIndex = 0;
   final DatabaseService _dbService = DatabaseService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final WeatherService _weatherService = WeatherService();
   WeatherModel? _currentWeather;
+  StreamSubscription<WeatherModel>? _weatherSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _weatherService.startWeatherMonitoring();
-    _weatherService.weatherStream.listen((weather) {
+    _weatherSubscription = _weatherService.weatherStream.listen((weather) {
+      if (!mounted) return;
       setState(() {
         _currentWeather = weather;
       });
     });
+    _updatePresence(true);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _weatherSubscription?.cancel();
     _weatherService.stopWeatherMonitoring();
+    _updatePresence(false);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _updatePresence(true);
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _updatePresence(false);
+    }
+  }
+
+  Future<void> _updatePresence(bool isOnline) async {
+    await _dbService.updateUserPresence(isOnline: isOnline);
   }
 
   @override

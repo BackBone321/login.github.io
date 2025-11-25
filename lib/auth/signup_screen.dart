@@ -51,6 +51,8 @@ class _SignupScreenState extends State<SignupScreen> {
           displayName: _nameController.text.trim(),
           isAdmin: false,
           createdAt: DateTime.now(),
+          isOnline: false,
+          lastSeen: DateTime.now(),
         ),
       );
 

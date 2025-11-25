@@ -43,6 +43,8 @@ class _LoginScreenState extends State<LoginScreen> {
             displayName: userCredential.user!.displayName,
             isAdmin: false,
             createdAt: DateTime.now(),
+            isOnline: true,
+            lastSeen: DateTime.now(),
           ),
         );
       }
