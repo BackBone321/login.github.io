@@ -28,10 +28,12 @@ class _DashboardScreenState extends State<DashboardScreen>
   final WeatherService _weatherService = WeatherService();
   WeatherModel? _currentWeather;
   StreamSubscription<WeatherModel>? _weatherSubscription;
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
+    _userId = _auth.currentUser?.uid;
     WidgetsBinding.instance.addObserver(this);
     _weatherService.startWeatherMonitoring();
     _weatherSubscription = _weatherService.weatherStream.listen((weather) {
@@ -64,7 +66,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Future<void> _updatePresence(bool isOnline) async {
-    await _dbService.updateUserPresence(isOnline: isOnline);
+    if (_userId == null) return;
+    await _dbService.updateUserPresence(isOnline: isOnline, uid: _userId);
   }
 
   @override

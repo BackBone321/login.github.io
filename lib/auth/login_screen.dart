@@ -45,7 +45,13 @@ class _LoginScreenState extends State<LoginScreen> {
             createdAt: DateTime.now(),
             isOnline: true,
             lastSeen: DateTime.now(),
+            avatarStyle: defaultAvatarStyle,
           ),
+        );
+      } else {
+        await dbService.updateUserPresence(
+          isOnline: true,
+          uid: userCredential.user!.uid,
         );
       }
 

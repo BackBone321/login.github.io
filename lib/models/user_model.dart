@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+const String defaultAvatarStyle = 'sprout_guardian';
+
 class UserModel {
   final String uid;
   final String email;
@@ -10,6 +12,7 @@ class UserModel {
   final DateTime createdAt;
   final bool isOnline;
   final DateTime? lastSeen;
+  final String? avatarStyle;
 
   UserModel({
     required this.uid,
@@ -21,6 +24,7 @@ class UserModel {
     required this.createdAt,
     this.isOnline = false,
     this.lastSeen,
+    this.avatarStyle,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,6 +38,7 @@ class UserModel {
       'createdAt': createdAt.toIso8601String(),
       'isOnline': isOnline,
       'lastSeen': lastSeen?.toIso8601String(),
+      'avatarStyle': avatarStyle,
     };
   }
 
@@ -48,6 +53,7 @@ class UserModel {
       createdAt: _parseDate(map['createdAt']) ?? DateTime.now(),
       isOnline: map['isOnline'] ?? false,
       lastSeen: _parseDate(map['lastSeen']),
+      avatarStyle: map['avatarStyle'],
     );
   }
 

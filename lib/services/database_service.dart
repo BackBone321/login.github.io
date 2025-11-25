@@ -41,10 +41,10 @@ class DatabaseService {
     await _firestore.collection('users').doc(uid).update(data);
   }
 
-  Future<void> updateUserPresence({required bool isOnline}) async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return;
-    await _firestore.collection('users').doc(uid).update({
+  Future<void> updateUserPresence({required bool isOnline, String? uid}) async {
+    final userId = uid ?? _auth.currentUser?.uid;
+    if (userId == null) return;
+    await _firestore.collection('users').doc(userId).update({
       'isOnline': isOnline,
       'lastSeen': DateTime.now().toIso8601String(),
     });

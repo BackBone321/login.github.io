@@ -53,6 +53,7 @@ class _SignupScreenState extends State<SignupScreen> {
           createdAt: DateTime.now(),
           isOnline: false,
           lastSeen: DateTime.now(),
+          avatarStyle: defaultAvatarStyle,
         ),
       );
 
@@ -88,7 +89,6 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
     final lightGreen = Color(0xFFE8F5E8);
-    final accentGreen = Color(0xFF4CAF50);
 
     return Scaffold(
       backgroundColor: Colors.white,

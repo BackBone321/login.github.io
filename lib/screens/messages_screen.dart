@@ -6,6 +6,7 @@ import '../models/message_model.dart';
 import '../models/user_model.dart';
 import '../models/group_model.dart';
 import '../models/group_message_model.dart';
+import '../widgets/guardian_avatar.dart';
 
 Future<void> _launchVideoCall(BuildContext context, String roomId) async {
   final sanitizedRoomId = roomId.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '');
@@ -38,10 +39,7 @@ String _resolveUserName(UserModel user) {
 }
 
 bool _isUserOnline(UserModel user) {
-  if (user.isOnline) return true;
-  final lastSeen = user.lastSeen;
-  if (lastSeen == null) return false;
-  return DateTime.now().difference(lastSeen).inMinutes < 2;
+  return user.isOnline;
 }
 
 String _formatRelativeTime(DateTime date) {
@@ -108,12 +106,6 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
               tooltip: 'Back to Chats',
               onPressed: _switchToChats,
             ),
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              // Add search functionality
-            },
-          ),
           PopupMenuButton<String>(
             icon: Icon(Icons.add),
             onSelected: (value) {
@@ -645,23 +637,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: primaryGreen.withOpacity(0.2),
-                      width: 2,
-                    ),
-                  ),
-                  child: CircleAvatar(
-                    radius: 28,
-                    backgroundColor: primaryGreen,
-                    child: Icon(Icons.person, color: Colors.white, size: 24),
-                  ),
-                ),
+                GuardianAvatar(style: user.avatarStyle, size: 60),
                 Positioned(
                   bottom: -2,
                   right: -2,
@@ -748,10 +724,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    CircleAvatar(
-                      backgroundColor: primaryGreen,
-                      child: Icon(Icons.person, color: Colors.white),
-                    ),
+                    GuardianAvatar(style: user.avatarStyle, size: 56),
                     Positioned(
                       bottom: -2,
                       right: -2,
@@ -882,9 +855,10 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
             final online = _isUserOnline(user);
             return Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: Colors.white.withOpacity(0.2),
-                  child: Icon(Icons.person, color: Colors.white, size: 20),
+                GuardianAvatar(
+                  style: user.avatarStyle,
+                  size: 42,
+                  addShadow: false,
                 ),
                 SizedBox(width: 12),
                 Column(
@@ -1586,13 +1560,10 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                               !isAdmin);
 
                       return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: primaryGreen,
-                          child: Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+                        leading: GuardianAvatar(
+                          style: member.avatarStyle,
+                          size: 44,
+                          addShadow: false,
                         ),
                         title: Text(_resolveUserName(member)),
                         subtitle: Row(

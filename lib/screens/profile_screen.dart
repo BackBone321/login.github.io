@@ -4,6 +4,7 @@ import '../services/database_service.dart';
 import '../models/user_model.dart';
 import '../auth/change_password_screen.dart';
 import '../auth/login_screen.dart';
+import '../widgets/guardian_avatar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,6 +19,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
+  UserModel? _cachedUser;
+  String? _selectedAvatarId;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +48,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () {
                 setState(() {
                   _isEditing = true;
+                  _selectedAvatarId ??=
+                      _cachedUser?.avatarStyle ?? defaultAvatarStyle;
                 });
               },
               tooltip: 'Edit Profile',
@@ -56,6 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 await _saveProfile();
                 setState(() {
                   _isEditing = false;
+                  _selectedAvatarId = null;
                 });
               },
               tooltip: 'Save Changes',
@@ -71,10 +77,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           }
           final userModel = snapshot.data;
+          _cachedUser = userModel;
           if (userModel != null && !_isEditing) {
             _nameController.text = userModel.displayName ?? '';
             _bioController.text = userModel.bio ?? '';
           }
+          final avatarId =
+              _selectedAvatarId ?? userModel?.avatarStyle ?? defaultAvatarStyle;
+          final avatarCharacter = guardianAvatarFor(avatarId);
 
           return SingleChildScrollView(
             child: Column(
@@ -139,35 +149,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     children: [
                       // Profile Picture
-                      Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: primaryGreen,
-                            child: Icon(
-                              Icons.person,
-                              size: 50,
-                              color: Colors.white,
+                      GestureDetector(
+                        onTap: _isEditing
+                            ? () => _openAvatarPicker(avatarId)
+                            : null,
+                        child: Column(
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                GuardianAvatar(
+                                  style: avatarCharacter.id,
+                                  size: 104,
+                                ),
+                                if (_isEditing)
+                                  Positioned(
+                                    bottom: 6,
+                                    right: 6,
+                                    child: Container(
+                                      padding: EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: primaryGreen,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.brush,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
-                          ),
-                          if (_isEditing)
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: primaryGreen,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
+                            SizedBox(height: 12),
+                            Text(
+                              avatarCharacter.name,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: primaryGreen,
                               ),
                             ),
-                        ],
+                            SizedBox(height: 4),
+                            Text(
+                              avatarCharacter.tagline,
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 13,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            if (_isEditing) ...[
+                              SizedBox(height: 8),
+                              Text(
+                                'Tap to customize your guardian',
+                                style: TextStyle(
+                                  color: primaryGreen,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ] else ...[
+                              SizedBox(height: 10),
+                              _buildGuardianUsageChip(avatarCharacter),
+                            ],
+                            _buildStatusBadge(userModel),
+                          ],
+                        ),
                       ),
                       SizedBox(height: 24),
 
@@ -390,6 +438,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           );
 
                           if (confirm == true) {
+                            final currentUid = _auth.currentUser?.uid;
+                            if (currentUid != null) {
+                              await _dbService.updateUserPresence(
+                                isOnline: false,
+                                uid: currentUid,
+                              );
+                            }
                             await _auth.signOut();
                             Navigator.pushAndRemoveUntil(
                               context,
@@ -447,9 +502,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = _auth.currentUser;
     if (user == null) return;
 
+    final avatarId =
+        _selectedAvatarId ?? _cachedUser?.avatarStyle ?? defaultAvatarStyle;
+
     await _dbService.updateUser(user.uid, {
       'displayName': _nameController.text,
       'bio': _bioController.text,
+      'avatarStyle': avatarId,
     });
 
     // Update Firebase Auth display name
@@ -864,5 +923,198 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController.dispose();
     _bioController.dispose();
     super.dispose();
+  }
+
+  void _openAvatarPicker(String currentId) {
+    final primaryGreen = Color(0xFF2E7D32);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            Text(
+              'Choose Your Guardian',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: primaryGreen,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Pick a character who represents your farming spirit.',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 20),
+            SizedBox(
+              height: 360,
+              child: GridView.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: 14,
+                crossAxisSpacing: 14,
+                childAspectRatio: 0.85,
+                children: guardianAvatarOptions.map((character) {
+                  final isSelected = character.id == currentId;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedAvatarId = character.id;
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 250),
+                      padding: EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? primaryGreen : Colors.transparent,
+                          width: 2,
+                        ),
+                        color: isSelected
+                            ? primaryGreen.withOpacity(0.08)
+                            : Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          GuardianAvatar(
+                            style: character.id,
+                            size: 64,
+                            addShadow: false,
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            character.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: primaryGreen,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            character.tagline,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                              height: 1.3,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuardianUsageChip(GuardianAvatarData character) {
+    final primaryGreen = Color(0xFF2E7D32);
+    final lightGreen = Color(0xFFE8F5E8);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: lightGreen,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.shield, color: primaryGreen, size: 16),
+          SizedBox(width: 6),
+          Text(
+            'Guardian: ${character.name}',
+            style: TextStyle(
+              color: primaryGreen,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(UserModel? user) {
+    final isOnline = user?.isOnline ?? false;
+    final lastSeen = user?.lastSeen;
+    final MaterialColor palette = isOnline ? Colors.green : Colors.grey;
+    final statusColor = palette.shade600;
+    String statusText;
+    if (isOnline) {
+      statusText = 'Online now';
+    } else if (lastSeen != null) {
+      statusText = 'Last seen ${_formatRelativeTime(lastSeen)}';
+    } else {
+      statusText = 'Offline';
+    }
+
+    return Container(
+      margin: EdgeInsets.only(top: 14),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: palette.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isOnline ? Icons.circle : Icons.timelapse,
+            color: statusColor,
+            size: 14,
+          ),
+          SizedBox(width: 8),
+          Text(
+            statusText,
+            style: TextStyle(
+              color: palette.shade800,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatRelativeTime(DateTime time) {
+    final diff = DateTime.now().difference(time);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${time.day}/${time.month}/${time.year}';
   }
 }

@@ -4,6 +4,7 @@ import '../services/database_service.dart';
 import '../models/friend_model.dart';
 import '../models/user_model.dart';
 import 'messages_screen.dart';
+import '../widgets/guardian_avatar.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -188,11 +189,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           Row(
             children: [
               // Profile Picture
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: primaryGreen,
-                child: Icon(Icons.person, color: Colors.white, size: 24),
-              ),
+              GuardianAvatar(style: user.avatarStyle, size: 60),
               SizedBox(width: 16),
 
               // User Information
@@ -334,11 +331,13 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   void _performSearch() {
     final primaryGreen = Color(0xFF2E7D32);
+    final backgroundColor = Color(0xFFF8FFF8);
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => Scaffold(
+          backgroundColor: backgroundColor,
           appBar: AppBar(
             backgroundColor: primaryGreen,
             title: Text('Search Results'),
@@ -352,12 +351,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 );
               }
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(
-                  child: Text(
-                    'No users found',
-                    style: TextStyle(color: primaryGreen),
-                  ),
-                );
+                return _buildEmptySearchResults(query: _searchController.text);
               }
 
               final currentUserId = _auth.currentUser!.uid;
@@ -365,11 +359,21 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   .where((user) => user.uid != currentUserId)
                   .toList();
 
+              if (users.isEmpty) {
+                return _buildEmptySearchResults(query: _searchController.text);
+              }
+
               return ListView.builder(
-                padding: EdgeInsets.all(16),
-                itemCount: users.length,
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
+                itemCount: users.length + 1,
                 itemBuilder: (context, index) {
-                  return _buildSearchUserCard(users[index]);
+                  if (index == 0) {
+                    return _buildSearchSummaryCard(
+                      query: _searchController.text,
+                      resultCount: users.length,
+                    );
+                  }
+                  return _buildSearchUserCard(users[index - 1]);
                 },
               );
             },
@@ -379,24 +383,124 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Widget _buildSearchUserCard(UserModel user) {
+  Widget _buildEmptySearchResults({required String query}) {
     final primaryGreen = Color(0xFF2E7D32);
+    final lightGreen = Color(0xFFE8F5E8);
+
+    return Padding(
+      padding: EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: lightGreen,
+            ),
+            child: Icon(Icons.travel_explore, color: primaryGreen, size: 40),
+          ),
+          SizedBox(height: 24),
+          Text(
+            'No matches for "$query"',
+            style: TextStyle(
+              color: primaryGreen,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Try searching with another name or email address.',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchSummaryCard({
+    required String query,
+    required int resultCount,
+  }) {
+    final primaryGreen = Color(0xFF2E7D32);
+    final lightGreen = Color(0xFFE8F5E8);
 
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: primaryGreen.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: primaryGreen.withOpacity(0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: primaryGreen.withOpacity(0.05),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: primaryGreen,
-            child: Icon(Icons.person, color: Colors.white, size: 20),
+          Container(
+            padding: EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: lightGreen,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.search, color: primaryGreen),
           ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Results for "$query"',
+                  style: TextStyle(
+                    color: primaryGreen,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '$resultCount potential connection${resultCount == 1 ? '' : 's'}',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchUserCard(UserModel user) {
+    final primaryGreen = Color(0xFF2E7D32);
+    final lightGreen = Color(0xFFE8F5E8);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: primaryGreen.withOpacity(0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: primaryGreen.withOpacity(0.04),
+            blurRadius: 10,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          GuardianAvatar(style: user.avatarStyle, size: 60),
           SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -427,8 +531,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 return Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: primaryGreen.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    color: lightGreen,
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     'Friends',
@@ -453,9 +557,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryGreen,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  elevation: 0,
                 ),
-                child: Text('Add Friend'),
+                child: Text(
+                  'Add Friend',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               );
             },
           ),
@@ -524,11 +635,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: primaryGreen,
-            child: Icon(Icons.person, color: Colors.white, size: 20),
-          ),
+          GuardianAvatar(style: user.avatarStyle, size: 54),
           SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -575,8 +682,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryGreen,
                           foregroundColor: Colors.white,
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
                         child: Text('Accept'),
                       ),
@@ -596,8 +705,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: Colors.redAccent),
                           foregroundColor: Colors.redAccent,
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
                         child: Text('Decline'),
                       ),
