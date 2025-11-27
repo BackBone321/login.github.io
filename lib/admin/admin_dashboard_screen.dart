@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/detection_model.dart';
 import '../services/database_service.dart';
 import '../widgets/detection_card.dart';
 import '../services/weather_service.dart';
 import '../models/weather_model.dart';
+import '../auth/login_screen.dart';
 import 'admin_messages_screen.dart';
 import 'admin_animal_detection_screen.dart';
 
@@ -17,6 +19,7 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     with SingleTickerProviderStateMixin {
   final DatabaseService _dbService = DatabaseService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final WeatherService _weatherService = WeatherService();
   WeatherModel? _currentWeather;
   late TabController _tabController;
@@ -68,10 +71,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               const SizedBox(height: 4),
               Text(
                 'Web dashboard for live monitoring & collaboration',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 13),
               ),
             ],
           ),
@@ -87,9 +87,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               },
               icon: const Icon(Icons.pets_outlined),
               label: const Text('Animal module'),
-              style: TextButton.styleFrom(
-                foregroundColor: deepGreen,
-              ),
+              style: TextButton.styleFrom(foregroundColor: deepGreen),
             ),
             TextButton.icon(
               onPressed: () {
@@ -107,6 +105,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               ),
             ),
             const SizedBox(width: 16),
+            IconButton(
+              tooltip: 'Logout',
+              icon: const Icon(Icons.logout),
+              color: deepGreen,
+              onPressed: _handleLogout,
+            ),
+            const SizedBox(width: 8),
           ],
         ),
       ),
@@ -135,6 +140,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           },
         ),
       ),
+    );
+  }
+
+  Future<void> _handleLogout() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await _dbService.updateUserPresence(isOnline: false, uid: user.uid);
+    }
+    await _auth.signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
     );
   }
 
@@ -278,10 +296,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -316,13 +331,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         final detections = snapshot.data ?? [];
         final insects = _countByTypes(detections, ['insect', 'pest']);
         final animals = _countByTypes(detections, ['cow', 'mammal', 'mammals']);
-        final plant = _countByTypes(detections, ['plant_health', 'health_plant']);
+        final plant = _countByTypes(detections, [
+          'plant_health',
+          'health_plant',
+        ]);
         final last24h = detections
-            .where(
-              (d) => DateTime.now().difference(d.detectedAt).inHours < 24,
-            )
+            .where((d) => DateTime.now().difference(d.detectedAt).inHours < 24)
             .length;
-        final latest = detections.isNotEmpty ? detections.first.detectedAt : null;
+        final latest = detections.isNotEmpty
+            ? detections.first.detectedAt
+            : null;
 
         final cards = [
           _buildMetricCard(
@@ -361,11 +379,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           ),
         ];
 
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: cards,
-        );
+        return Wrap(spacing: 16, runSpacing: 16, children: cards);
       },
     );
   }
@@ -410,10 +424,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -427,10 +438,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   const SizedBox(height: 6),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                 ],
               ),
@@ -531,14 +539,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               unselectedLabelColor: deepGreen,
               labelStyle: const TextStyle(fontWeight: FontWeight.w600),
               tabs: const [
-                Tab(
-                  icon: Icon(Icons.bug_report_outlined),
-                  text: 'Insects',
-                ),
-                Tab(
-                  icon: Icon(Icons.pets_outlined),
-                  text: 'Animals',
-                ),
+                Tab(icon: Icon(Icons.bug_report_outlined), text: 'Insects'),
+                Tab(icon: Icon(Icons.pets_outlined), text: 'Animals'),
                 Tab(
                   icon: Icon(Icons.local_florist_outlined),
                   text: 'Plant health',
@@ -564,7 +566,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 
   int _countByTypes(List<DetectionModel> detections, List<String> types) {
-    return detections.where((detection) => types.contains(detection.type)).length;
+    return detections
+        .where((detection) => types.contains(detection.type))
+        .length;
   }
 
   String _formatRelativeTime(DateTime? dateTime) {
@@ -583,9 +587,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       stream: _dbService.getAllDetections(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: primaryGreen),
-          );
+          return Center(child: CircularProgressIndicator(color: primaryGreen));
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
@@ -630,10 +632,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-          colors: [
-            accent.withOpacity(0.12),
-            Colors.white,
-          ],
+          colors: [accent.withOpacity(0.12), Colors.white],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -668,10 +667,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               children: [
                 Text(
                   'Weather overview',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey[700],
-                  ),
+                  style: TextStyle(fontSize: 15, color: Colors.grey[700]),
                 ),
                 const SizedBox(height: 4),
                 Text(

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/database_service.dart';
+import '../models/user_model.dart';
+import '../services/admin_gatekeeper.dart';
 import 'admin_dashboard_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -10,45 +14,72 @@ class AdminLoginScreen extends StatefulWidget {
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController(text: 'admin1@gmail.com');
+  final _passwordController = TextEditingController(text: 'admin123');
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseService _dbService = DatabaseService();
   bool _isLoading = false;
-
-  static const String _adminPassword = 'admin4321';
 
   @override
   void dispose() {
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() {
-      _isLoading = true;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    if (_passwordController.text.trim() == _adminPassword) {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+    setState(() => _isLoading = true);
+    try {
+      final email = normalizeAdminEmailInput(_emailController.text.trim());
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: _passwordController.text.trim(),
       );
-    } else {
+      final user = credential.user;
+      if (user != null) {
+        final profile = await _dbService.getUser(user.uid);
+        if (profile == null) {
+          await _dbService.createUser(
+            UserModel(
+              uid: user.uid,
+              email: email,
+              displayName: 'Admin',
+              isAdmin: true,
+              createdAt: DateTime.now(),
+              isOnline: true,
+              lastSeen: DateTime.now(),
+              avatarStyle: defaultAvatarStyle,
+            ),
+          );
+        } else if (profile.isAdmin != true) {
+          await _dbService.updateUser(user.uid, {'isAdmin': true});
+        }
+        await _dbService.updateUserPresence(isOnline: true, uid: user.uid);
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+        );
+        return;
+      }
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'Unable to authenticate admin user.',
+      );
+    } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid admin password'),
+        SnackBar(
+          content: Text(e.message ?? 'Admin login failed'),
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   @override
@@ -83,6 +114,21 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   style: TextStyle(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 24),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Admin email',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Email is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,

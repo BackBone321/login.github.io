@@ -15,6 +15,7 @@ class DatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final Random _random = Random.secure();
+  final Map<String, Stream<UserModel?>> _userStreamCache = {};
 
   String _generateInviteCode([int length = 8]) {
     const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -51,11 +52,17 @@ class DatabaseService {
   }
 
   Stream<UserModel?> getUserStream(String uid) {
-    return _firestore
+    if (_userStreamCache.containsKey(uid)) {
+      return _userStreamCache[uid]!;
+    }
+    final stream = _firestore
         .collection('users')
         .doc(uid)
         .snapshots()
-        .map((doc) => doc.exists ? UserModel.fromMap(doc.data()!) : null);
+        .map((doc) => doc.exists ? UserModel.fromMap(doc.data()!) : null)
+        .asBroadcastStream();
+    _userStreamCache[uid] = stream;
+    return stream;
   }
 
   Stream<List<UserModel>> getAllUsers() {

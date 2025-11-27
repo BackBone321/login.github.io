@@ -3,11 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
 import '../services/database_service.dart';
+import '../services/admin_gatekeeper.dart';
 import '../models/user_model.dart';
-import '../admin/admin_login_screen.dart';
 import 'password_recovery_screen.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
+import '../admin/admin_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,33 +27,46 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
+      final normalizedEmail = normalizeAdminEmailInput(
+        _emailPhoneController.text.trim(),
+      );
       final userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
-            email: _emailPhoneController.text.trim(),
+            email: normalizedEmail,
             password: _passwordController.text.trim(),
           );
 
       // Check if user exists in Firestore, if not create them
       final dbService = DatabaseService();
-      final userModel = await dbService.getUser(userCredential.user!.uid);
+      final firebaseUser = userCredential.user!;
+      final bool isAdminAccount = isAdminEmail(firebaseUser.email);
+
+      final userModel = await dbService.getUser(firebaseUser.uid);
+      bool shouldOpenAdmin = isAdminAccount || (userModel?.isAdmin ?? false);
+
       if (userModel == null) {
         await dbService.createUser(
           UserModel(
-            uid: userCredential.user!.uid,
-            email: userCredential.user!.email!,
-            displayName: userCredential.user!.displayName,
-            isAdmin: false,
+            uid: firebaseUser.uid,
+            email: firebaseUser.email!,
+            displayName: firebaseUser.displayName,
+            isAdmin: isAdminAccount,
             createdAt: DateTime.now(),
             isOnline: true,
             lastSeen: DateTime.now(),
             avatarStyle: defaultAvatarStyle,
           ),
         );
+        shouldOpenAdmin = isAdminAccount;
       } else {
         await dbService.updateUserPresence(
           isOnline: true,
-          uid: userCredential.user!.uid,
+          uid: firebaseUser.uid,
         );
+        if (isAdminAccount && userModel.isAdmin != true) {
+          await dbService.updateUser(firebaseUser.uid, {'isAdmin': true});
+        }
+        shouldOpenAdmin = isAdminAccount || userModel.isAdmin;
       }
 
       // Success - AuthWrapper will automatically navigate to HomeScreen
@@ -60,7 +74,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => HomeScreen()),
+          MaterialPageRoute(
+            builder: (_) =>
+                shouldOpenAdmin ? const AdminDashboardScreen() : HomeScreen(),
+          ),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -201,24 +218,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               MaterialPageRoute(builder: (_) => SignupScreen()),
                             ),
                             isPrimary: false,
-                          ),
-                          SizedBox(height: 16),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AdminLoginScreen(),
-                                ),
-                              );
-                            },
-                            child: Text(
-                              'Admin login',
-                              style: TextStyle(
-                                color: primaryGreen,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
                           ),
                         ],
                       ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'auth/auth_wrapper.dart';
-import 'admin/admin_login_screen.dart';
 import 'admin/admin_dashboard_screen.dart';
 
 void main() async {
@@ -47,7 +46,6 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const AuthWrapper(),
-        '/admin-login': (context) => const AdminLoginScreen(),
         '/admin-dashboard': (context) => const AdminDashboardScreen(),
       },
       debugShowCheckedModeBanner: false,

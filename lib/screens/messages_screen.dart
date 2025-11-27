@@ -1000,62 +1000,79 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
             ),
             child: Row(
               children: [
-                IconButton(
-                  icon: Icon(Icons.add, color: primaryGreen),
-                  onPressed: () {
-                    // Attachment options in future
-                  },
-                ),
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
                       color: lightGreen,
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(
-                        hintText: 'Type a message...',
-                        hintStyle: TextStyle(
-                          color: primaryGreen.withOpacity(0.6),
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                    child: SafeArea(
+                      top: false,
+                      bottom: false,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.add, color: primaryGreen),
+                            onPressed: () {
+                              // Attachment options in future
+                            },
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              decoration: InputDecoration(
+                                hintText: 'Type a message...',
+                                hintStyle: TextStyle(
+                                  color: primaryGreen.withOpacity(0.6),
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                              maxLines: null,
+                              textCapitalization: TextCapitalization.sentences,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: primaryGreen,
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.send,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              onPressed: () async {
+                                if (_messageController.text.trim().isNotEmpty) {
+                                  final message = MessageModel(
+                                    id: DateTime.now().millisecondsSinceEpoch
+                                        .toString(),
+                                    senderId: _auth.currentUser!.uid,
+                                    receiverId: widget.otherUser.uid,
+                                    senderName:
+                                        _auth.currentUser!.displayName ??
+                                        _auth.currentUser!.email ??
+                                        'User',
+                                    content: _messageController.text.trim(),
+                                    timestamp: DateTime.now(),
+                                    isRead: false,
+                                  );
+                                  await _dbService.sendMessage(message);
+                                  _messageController.clear();
+                                }
+                              },
+                            ),
+                          ),
+                        ],
                       ),
-                      maxLines: null,
-                      textCapitalization: TextCapitalization.sentences,
                     ),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: primaryGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.send, color: Colors.white, size: 20),
-                    onPressed: () async {
-                      if (_messageController.text.trim().isNotEmpty) {
-                        final message = MessageModel(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          senderId: _auth.currentUser!.uid,
-                          receiverId: widget.otherUser.uid,
-                          senderName:
-                              _auth.currentUser!.displayName ??
-                              _auth.currentUser!.email ??
-                              'User',
-                          content: _messageController.text.trim(),
-                          timestamp: DateTime.now(),
-                          isRead: false,
-                        );
-                        await _dbService.sendMessage(message);
-                        _messageController.clear();
-                      }
-                    },
                   ),
                 ),
               ],
@@ -1434,78 +1451,93 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
           ),
 
           // Message input
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.add, color: primaryGreen),
-                  onPressed: () {
-                    // Add attachment options
-                  },
-                ),
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: lightGreen,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(
-                        hintText: 'Message ${widget.group.name}...',
-                        hintStyle: TextStyle(
-                          color: primaryGreen.withOpacity(0.6),
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
                       ),
-                      maxLines: null,
-                      textCapitalization: TextCapitalization.sentences,
+                      decoration: BoxDecoration(
+                        color: lightGreen,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.add, color: primaryGreen),
+                            onPressed: () {
+                              // Add attachment options
+                            },
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              decoration: InputDecoration(
+                                hintText: 'Message ${widget.group.name}...',
+                                hintStyle: TextStyle(
+                                  color: primaryGreen.withOpacity(0.6),
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                              maxLines: null,
+                              textCapitalization: TextCapitalization.sentences,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: 12),
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: primaryGreen,
-                    shape: BoxShape.circle,
+                  SizedBox(width: 12),
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: primaryGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.send, color: Colors.white, size: 20),
+                      onPressed: () async {
+                        if (_messageController.text.trim().isNotEmpty) {
+                          final message = GroupMessageModel(
+                            id: DateTime.now().millisecondsSinceEpoch
+                                .toString(),
+                            groupId: widget.group.id,
+                            senderId: _auth.currentUser!.uid,
+                            senderName:
+                                _auth.currentUser!.displayName ??
+                                _auth.currentUser!.email ??
+                                'User',
+                            content: _messageController.text.trim(),
+                            timestamp: DateTime.now(),
+                          );
+                          await _dbService.sendGroupMessage(message);
+                          _messageController.clear();
+                        }
+                      },
+                    ),
                   ),
-                  child: IconButton(
-                    icon: Icon(Icons.send, color: Colors.white, size: 20),
-                    onPressed: () async {
-                      if (_messageController.text.trim().isNotEmpty) {
-                        final message = GroupMessageModel(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          groupId: widget.group.id,
-                          senderId: _auth.currentUser!.uid,
-                          senderName:
-                              _auth.currentUser!.displayName ??
-                              _auth.currentUser!.email ??
-                              'User',
-                          content: _messageController.text.trim(),
-                          timestamp: DateTime.now(),
-                        );
-                        await _dbService.sendGroupMessage(message);
-                        _messageController.clear();
-                      }
-                    },
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
