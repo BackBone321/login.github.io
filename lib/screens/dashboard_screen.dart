@@ -29,6 +29,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   WeatherModel? _currentWeather;
   StreamSubscription<WeatherModel>? _weatherSubscription;
   String? _userId;
+  final Widget _friendsScreen = const FriendsScreen();
+  final Widget _messagesScreen = const EnhancedMessagesScreen();
+  final Widget _profileScreen = const ProfileScreen();
 
   @override
   void initState() {
@@ -167,13 +170,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       case 0:
         return _buildHomeScreen();
       case 1:
-        return FriendsScreen();
+        return _friendsScreen;
       case 2:
         return _buildPlantScreen();
       case 3:
-        return EnhancedMessagesScreen();
+        return _messagesScreen;
       case 4:
-        return ProfileScreen();
+        return _profileScreen;
       default:
         return _buildHomeScreen();
     }
