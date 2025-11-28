@@ -24,18 +24,51 @@ class _FriendsScreenState extends State<FriendsScreen> {
     final lightGreen = Color(0xFFE8F5E8);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFF8FFF8),
       appBar: AppBar(
-        backgroundColor: primaryGreen,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [primaryGreen, Color(0xFF1B5E20)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         elevation: 0,
-        title: Text(
-          'My Friends',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.people, size: 20),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'My Friends',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () => _showSearchDialog(),
+          Container(
+            margin: EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: Icon(Icons.person_add),
+              onPressed: () => _showSearchDialog(),
+              tooltip: 'Find Friends',
+            ),
           ),
         ],
       ),
@@ -48,26 +81,79 @@ class _FriendsScreenState extends State<FriendsScreen> {
               builder: (context, snapshot) {
                 if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                   return Container(
-                    padding: EdgeInsets.all(16),
-                    color: lightGreen,
+                    margin: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [primaryGreen.withOpacity(0.1), lightGreen],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: primaryGreen.withOpacity(0.2)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryGreen.withOpacity(0.08),
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
                     child: Row(
                       children: [
-                        Icon(Icons.notifications, color: primaryGreen),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            '${snapshot.data!.length} friend request${snapshot.data!.length > 1 ? 's' : ''}',
-                            style: TextStyle(
-                              color: primaryGreen,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        Container(
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: primaryGreen,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.person_add,
+                            color: Colors.white,
+                            size: 22,
                           ),
                         ),
-                        TextButton(
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Friend Requests',
+                                style: TextStyle(
+                                  color: primaryGreen,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                '${snapshot.data!.length} pending request${snapshot.data!.length > 1 ? 's' : ''}',
+                                style: TextStyle(
+                                  color: primaryGreen.withOpacity(0.7),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton(
                           onPressed: () => _showFriendRequests(snapshot.data!),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryGreen,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
                           child: Text(
                             'View',
-                            style: TextStyle(color: primaryGreen),
+                            style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                       ],
@@ -121,47 +207,75 @@ class _FriendsScreenState extends State<FriendsScreen> {
     final primaryGreen = Color(0xFF2E7D32);
 
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Color(0xFFE8F5E8),
-              shape: BoxShape.circle,
+      child: Padding(
+        padding: EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primaryGreen.withOpacity(0.15), Color(0xFFE8F5E8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryGreen.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.people_outline, size: 64, color: primaryGreen),
             ),
-            child: Icon(
-              Icons.people_outline,
-              size: 48,
-              color: primaryGreen.withOpacity(0.5),
+            SizedBox(height: 32),
+            Text(
+              'No friends yet',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: primaryGreen,
+                letterSpacing: 0.3,
+              ),
             ),
-          ),
-          SizedBox(height: 24),
-          Text(
-            'No friends yet',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: primaryGreen,
+            SizedBox(height: 12),
+            Text(
+              'Find and connect with people\nin your farm community',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 15,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Find and connect with people',
-            style: TextStyle(color: Colors.grey[600], fontSize: 16),
-          ),
-          SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => _showSearchDialog(),
-            icon: Icon(Icons.search),
-            label: Text('Find Friends'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGreen,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => _showSearchDialog(),
+              icon: Icon(Icons.person_add, size: 20),
+              label: Text(
+                'Find Friends',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGreen,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                elevation: 4,
+                shadowColor: primaryGreen.withOpacity(0.4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -170,68 +284,115 @@ class _FriendsScreenState extends State<FriendsScreen> {
     final primaryGreen = Color(0xFF2E7D32);
 
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: primaryGreen.withOpacity(0.1)),
+        gradient: LinearGradient(
+          colors: [Colors.white, Color(0xFFFAFDFA)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: primaryGreen.withOpacity(0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: primaryGreen.withOpacity(0.05),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+            color: primaryGreen.withOpacity(0.08),
+            blurRadius: 12,
+            offset: Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              // Profile Picture
-              GuardianAvatar(style: user.avatarStyle, size: 60),
-              SizedBox(width: 16),
-
-              // User Information
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.displayName ?? user.email ?? 'Unknown User',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: primaryGreen,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      user.email!,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
-                    if (user.bio != null && user.bio!.isNotEmpty) ...[
-                      SizedBox(height: 8),
-                      Text(
-                        user.bio!,
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                          fontSize: 14,
-                          height: 1.3,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+          Padding(
+            padding: EdgeInsets.all(20),
+            child: Row(
+              children: [
+                // Profile Picture with shadow
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryGreen.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
                       ),
                     ],
-                  ],
+                  ),
+                  child: GuardianAvatar(style: user.avatarStyle, size: 68),
                 ),
-              ),
+                SizedBox(width: 18),
 
-              // Action Buttons
-              Column(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.message, color: primaryGreen),
+                // User Information
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.displayName ?? user.email ?? 'Unknown User',
+                        style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                          color: primaryGreen,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.email_outlined,
+                            size: 14,
+                            color: Colors.grey[600],
+                          ),
+                          SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              user.email!,
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (user.bio != null && user.bio!.isNotEmpty) ...[
+                        SizedBox(height: 10),
+                        Text(
+                          user.bio!,
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Action Buttons Row
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: primaryGreen.withOpacity(0.05),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -240,10 +401,31 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         ),
                       );
                     },
-                    tooltip: 'Send Message',
+                    icon: Icon(Icons.message, size: 18),
+                    label: Text('Message'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryGreen,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert, color: primaryGreen),
+                ),
+                SizedBox(width: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: primaryGreen.withOpacity(0.3)),
+                  ),
+                  child: PopupMenuButton<String>(
+                    icon: Icon(Icons.more_horiz, color: primaryGreen),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     onSelected: (value) async {
                       if (value == 'unfriend') {
                         await _unfriendUser(user);
@@ -256,8 +438,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         value: 'view_profile',
                         child: Row(
                           children: [
-                            Icon(Icons.person, color: primaryGreen),
-                            SizedBox(width: 8),
+                            Icon(Icons.person, color: primaryGreen, size: 20),
+                            SizedBox(width: 12),
                             Text('View Profile'),
                           ],
                         ),
@@ -266,8 +448,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         value: 'unfriend',
                         child: Row(
                           children: [
-                            Icon(Icons.person_remove, color: Colors.red),
-                            SizedBox(width: 8),
+                            Icon(
+                              Icons.person_remove,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                            SizedBox(width: 12),
                             Text(
                               'Unfriend',
                               style: TextStyle(color: Colors.red),
@@ -277,9 +463,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       ),
                     ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -287,44 +473,168 @@ class _FriendsScreenState extends State<FriendsScreen> {
   }
 
   void _showSearchDialog() {
+    final primaryGreen = Color(0xFF2E7D32);
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Find Friends',
-          style: TextStyle(
-            color: Color(0xFF2E7D32),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: TextField(
-          controller: _searchController,
-          decoration: InputDecoration(
-            hintText: 'Search by name or email',
-            prefixIcon: Icon(Icons.search, color: Color(0xFF2E7D32)),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (_searchController.text.isNotEmpty) {
-                _performSearch();
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF2E7D32),
-              foregroundColor: Colors.white,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.white, Color(0xFFFAFDFA)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: Text('Search'),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: primaryGreen.withOpacity(0.15),
+              width: 1.5,
+            ),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          primaryGreen.withOpacity(0.15),
+                          primaryGreen.withOpacity(0.08),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(Icons.search, color: primaryGreen, size: 28),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Find Friends',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: primaryGreen,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Search by name or email',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: primaryGreen.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 24),
+
+              // Search Field
+              Container(
+                decoration: BoxDecoration(
+                  color: primaryGreen.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: primaryGreen.withOpacity(0.2)),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter name or email...',
+                    hintStyle: TextStyle(color: primaryGreen.withOpacity(0.4)),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: primaryGreen.withOpacity(0.6),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                  ),
+                  autofocus: true,
+                  style: TextStyle(color: primaryGreen, fontSize: 16),
+                ),
+              ),
+              SizedBox(height: 24),
+
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: primaryGreen,
+                        side: BorderSide(color: primaryGreen.withOpacity(0.3)),
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        if (_searchController.text.isNotEmpty) {
+                          _performSearch();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryGreen,
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shadowColor: primaryGreen.withOpacity(0.4),
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Search',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -339,15 +649,79 @@ class _FriendsScreenState extends State<FriendsScreen> {
         builder: (context) => Scaffold(
           backgroundColor: backgroundColor,
           appBar: AppBar(
-            backgroundColor: primaryGreen,
-            title: Text('Search Results'),
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primaryGreen, Color(0xFF1B5E20)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.search, size: 20),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Search Results',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        '"${_searchController.text}"',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           body: FutureBuilder<List<UserModel>>(
             future: _dbService.searchUsers(_searchController.text),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(
-                  child: CircularProgressIndicator(color: primaryGreen),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: primaryGreen),
+                      SizedBox(height: 16),
+                      Text(
+                        'Searching...',
+                        style: TextStyle(
+                          color: primaryGreen,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -364,7 +738,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
               }
 
               return ListView.builder(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 24),
                 itemCount: users.length + 1,
                 itemBuilder: (context, index) {
                   if (index == 0) {
@@ -385,38 +759,95 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   Widget _buildEmptySearchResults({required String query}) {
     final primaryGreen = Color(0xFF2E7D32);
-    final lightGreen = Color(0xFFE8F5E8);
 
-    return Padding(
-      padding: EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: lightGreen,
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primaryGreen.withOpacity(0.12), Color(0xFFE8F5E8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryGreen.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.search_off, color: primaryGreen, size: 72),
             ),
-            child: Icon(Icons.travel_explore, color: primaryGreen, size: 40),
-          ),
-          SizedBox(height: 24),
-          Text(
-            'No matches for "$query"',
-            style: TextStyle(
-              color: primaryGreen,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+            SizedBox(height: 32),
+            Text(
+              'No Results Found',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: primaryGreen,
+                letterSpacing: 0.3,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Try searching with another name or email address.',
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: primaryGreen.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '"$query"',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: primaryGreen,
+                  fontWeight: FontWeight.w600,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'We couldn\'t find any users matching your search.',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 15,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Try searching with a different name or email address.',
+              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 32),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: Icon(Icons.arrow_back, size: 18),
+              label: Text(
+                'Try Another Search',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: primaryGreen,
+                side: BorderSide(color: primaryGreen.withOpacity(0.4)),
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -426,19 +857,22 @@ class _FriendsScreenState extends State<FriendsScreen> {
     required int resultCount,
   }) {
     final primaryGreen = Color(0xFF2E7D32);
-    final lightGreen = Color(0xFFE8F5E8);
 
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      padding: EdgeInsets.all(18),
+      margin: EdgeInsets.only(bottom: 20),
+      padding: EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primaryGreen.withOpacity(0.08)),
+        gradient: LinearGradient(
+          colors: [primaryGreen.withOpacity(0.08), Color(0xFFE8F5E9)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: primaryGreen.withOpacity(0.2), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: primaryGreen.withOpacity(0.05),
-            blurRadius: 12,
+            color: primaryGreen.withOpacity(0.1),
+            blurRadius: 15,
             offset: Offset(0, 6),
           ),
         ],
@@ -446,30 +880,58 @@ class _FriendsScreenState extends State<FriendsScreen> {
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(14),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: lightGreen,
+              gradient: LinearGradient(
+                colors: [primaryGreen, Color(0xFF1B5E20)],
+              ),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: primaryGreen.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
-            child: Icon(Icons.search, color: primaryGreen),
+            child: Icon(Icons.check_circle, color: Colors.white, size: 26),
           ),
-          SizedBox(width: 16),
+          SizedBox(width: 18),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Results for "$query"',
+                  'Found $resultCount ${resultCount == 1 ? 'Match' : 'Matches'}',
                   style: TextStyle(
                     color: primaryGreen,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    letterSpacing: 0.3,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  '$resultCount potential connection${resultCount == 1 ? '' : 's'}',
-                  style: TextStyle(color: Colors.grey[600]),
+                SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.search,
+                      size: 14,
+                      color: primaryGreen.withOpacity(0.6),
+                    ),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Searching: "$query"',
+                        style: TextStyle(
+                          color: primaryGreen.withOpacity(0.7),
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -481,27 +943,43 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   Widget _buildSearchUserCard(UserModel user) {
     final primaryGreen = Color(0xFF2E7D32);
-    final lightGreen = Color(0xFFE8F5E8);
 
     return Container(
-      margin: EdgeInsets.only(bottom: 14),
-      padding: EdgeInsets.all(18),
+      margin: EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primaryGreen.withOpacity(0.08)),
+        gradient: LinearGradient(
+          colors: [Colors.white, Color(0xFFFAFDFA)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: primaryGreen.withOpacity(0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: primaryGreen.withOpacity(0.04),
-            blurRadius: 10,
+            color: primaryGreen.withOpacity(0.08),
+            blurRadius: 15,
             offset: Offset(0, 6),
           ),
         ],
       ),
       child: Row(
         children: [
-          GuardianAvatar(style: user.avatarStyle, size: 60),
-          SizedBox(width: 16),
+          // Avatar with shadow
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: primaryGreen.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: GuardianAvatar(style: user.avatarStyle, size: 64),
+          ),
+          SizedBox(width: 18),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -511,36 +989,76 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: primaryGreen,
-                    fontSize: 16,
+                    fontSize: 17,
+                    letterSpacing: 0.3,
                   ),
                 ),
-                if (user.bio != null && user.bio!.isNotEmpty)
+                SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.email_outlined,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        user.email ?? 'No email',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                if (user.bio != null && user.bio!.isNotEmpty) ...[
+                  SizedBox(height: 8),
                   Text(
                     user.bio!,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    maxLines: 1,
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                ],
               ],
             ),
           ),
+          SizedBox(width: 12),
           FutureBuilder<bool>(
             future: _dbService.areFriends(_auth.currentUser!.uid, user.uid),
             builder: (context, snapshot) {
               if (snapshot.hasData && snapshot.data == true) {
                 return Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: lightGreen,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Friends',
-                    style: TextStyle(
-                      color: primaryGreen,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
+                    gradient: LinearGradient(
+                      colors: [
+                        primaryGreen.withOpacity(0.15),
+                        primaryGreen.withOpacity(0.08),
+                      ],
                     ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: primaryGreen.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, color: primaryGreen, size: 16),
+                      SizedBox(width: 6),
+                      Text(
+                        'Friends',
+                        style: TextStyle(
+                          color: primaryGreen,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }
@@ -549,23 +1067,44 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   await _dbService.sendFriendRequest(user.uid);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Friend request sent'),
-                      backgroundColor: Colors.green,
+                      content: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white),
+                          SizedBox(width: 12),
+                          Text('Friend request sent!'),
+                        ],
+                      ),
+                      backgroundColor: primaryGreen,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryGreen,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  elevation: 4,
+                  shadowColor: primaryGreen.withOpacity(0.4),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 0,
                 ),
-                child: Text(
-                  'Add Friend',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.person_add, size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      'Add',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               );
             },

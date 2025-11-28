@@ -82,8 +82,6 @@ class WeatherService {
       condition = 'Sunny';
     } else if (humidity > 70.0 && rand < 0.3) {
       condition = 'Rainy';
-    } else if (windSpeed > 20.0 && rand < 0.2) {
-      condition = 'Windy';
     } else if (rand < 0.6) {
       condition = 'Cloudy';
     } else {

@@ -57,6 +57,26 @@ String _presenceLabel(UserModel user) {
   return 'Last seen ${_formatRelativeTime(user.lastSeen!)}';
 }
 
+class _KeepAliveWrapper extends StatefulWidget {
+  final Widget child;
+  const _KeepAliveWrapper({super.key, required this.child});
+
+  @override
+  State<_KeepAliveWrapper> createState() => _KeepAliveWrapperState();
+}
+
+class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+}
+
 class EnhancedMessagesScreen extends StatefulWidget {
   const EnhancedMessagesScreen({super.key});
 
@@ -65,10 +85,13 @@ class EnhancedMessagesScreen extends StatefulWidget {
 }
 
 class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   final DatabaseService _dbService = DatabaseService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late TabController _tabController;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -83,65 +106,98 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
     super.dispose();
   }
 
-  void _switchToChats() {
-    setState(() {
-      _tabController.animateTo(0);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final primaryGreen = Color(0xFF2E7D32);
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: primaryGreen,
-        elevation: 0,
-        title: Text('Messages', style: TextStyle(fontWeight: FontWeight.w600)),
-        actions: [
-          if (_tabController.index == 1)
-            IconButton(
-              icon: Icon(Icons.chat),
-              tooltip: 'Back to Chats',
-              onPressed: _switchToChats,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [primaryGreen, Color(0xFF1B5E20)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          PopupMenuButton<String>(
-            icon: Icon(Icons.add),
-            onSelected: (value) {
-              if (value == 'new_group') {
-                _showCreateGroupDialog();
-              } else if (value == 'new_chat') {
-                // Navigate to friend selection for new chat
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'new_chat',
-                child: Row(
-                  children: [
-                    Icon(Icons.person, color: primaryGreen),
-                    SizedBox(width: 8),
-                    Text('New Chat'),
-                  ],
-                ),
+          ),
+        ),
+        elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
               ),
-              PopupMenuItem(
-                value: 'new_group',
-                child: Row(
-                  children: [
-                    Icon(Icons.group_add, color: primaryGreen),
-                    SizedBox(width: 8),
-                    Text('New Group'),
-                  ],
-                ),
+              child: Icon(Icons.chat_bubble, size: 20),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Messages',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                letterSpacing: 0.5,
               ),
-            ],
+            ),
+          ],
+        ),
+        actions: [
+          Container(
+            margin: EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: PopupMenuButton<String>(
+              icon: Icon(Icons.add),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onSelected: (value) {
+                if (value == 'new_group') {
+                  _showCreateGroupDialog();
+                } else if (value == 'new_chat') {
+                  // Navigate to friend selection for new chat
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'new_chat',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person, color: primaryGreen),
+                      SizedBox(width: 12),
+                      Text('New Chat'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'new_group',
+                  child: Row(
+                    children: [
+                      Icon(Icons.group_add, color: primaryGreen),
+                      SizedBox(width: 12),
+                      Text('New Group'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelStyle: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            letterSpacing: 0.3,
+          ),
           tabs: [
             Tab(icon: Icon(Icons.chat), text: 'Chats'),
             Tab(icon: Icon(Icons.groups), text: 'Groups'),
@@ -150,16 +206,18 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [_buildChatsTab(), _buildGroupsTab()],
+        children: [
+          _KeepAliveWrapper(
+            key: PageStorageKey('chats_wrapper'),
+            child: _buildChatsTab(),
+          ),
+          _KeepAliveWrapper(
+            key: PageStorageKey('groups_wrapper'),
+            child: _buildGroupsTab(),
+          ),
+        ],
       ),
-      floatingActionButton: _tabController.index == 1
-          ? FloatingActionButton(
-              onPressed: _switchToChats,
-              backgroundColor: primaryGreen,
-              tooltip: 'Back to Chats',
-              child: Icon(Icons.chat, color: Colors.white),
-            )
-          : null,
+      floatingActionButton: null,
     );
   }
 
@@ -167,31 +225,63 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
     final primaryGreen = Color(0xFF2E7D32);
 
     return Column(
+      key: PageStorageKey('chats_tab'),
       children: [
         // Quick Friends Access
         Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(vertical: 16),
-          color: Color(0xFFE8F5E8).withOpacity(0.3),
+          padding: EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [primaryGreen.withOpacity(0.08), Color(0xFFE8F5E9)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border(
+              bottom: BorderSide(
+                color: primaryGreen.withOpacity(0.1),
+                width: 1,
+              ),
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Quick Chat',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: primaryGreen,
-                  ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: primaryGreen.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.flash_on,
+                        color: primaryGreen,
+                        size: 18,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      'Quick Chat',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: primaryGreen,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SizedBox(height: 12),
               SizedBox(
                 height: 110,
                 child: StreamBuilder<List<String>>(
+                  key: PageStorageKey('friends_stream'),
                   stream: _dbService.getFriends(_auth.currentUser!.uid),
                   builder: (context, friendsSnapshot) {
                     if (friendsSnapshot.connectionState ==
@@ -234,6 +324,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
         // Individual Conversations
         Expanded(
           child: StreamBuilder<List<Map<String, dynamic>>>(
+            key: PageStorageKey('conversations_stream'),
             stream: _dbService.getConversations(_auth.currentUser!.uid),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -265,6 +356,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
     final primaryGreen = Color(0xFF2E7D32);
 
     return StreamBuilder<List<GroupModel>>(
+      key: PageStorageKey('groups_tab'),
       stream: _dbService.getUserGroups(_auth.currentUser!.uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -426,7 +518,6 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: primaryGreen.withOpacity(0.5)),
           ],
         ),
       ),

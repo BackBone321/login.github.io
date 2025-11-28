@@ -1,10 +1,5 @@
-import 'dart:math';
-import 'dart:typed_data';
-
-import 'package:camera/camera.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:image/image.dart' as img;
 
 import '../models/detection_model.dart';
 import '../models/invite_model.dart';
@@ -30,24 +25,11 @@ class _AdminAnimalDetectionScreenState
   final GlobalKey<FormState> _inviteFormKey = GlobalKey<FormState>();
 
   bool _sendingInvite = false;
-  bool _loggingSample = false;
-  bool _cameraInitializing = false;
-  bool _cameraDetecting = false;
-  String? _cameraError;
-  CameraController? _cameraController;
-  _CowDetectionResult? _lastCowResult;
-
-  @override
-  void initState() {
-    super.initState();
-    _initCamera();
-  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _messageController.dispose();
-    _cameraController?.dispose();
     super.dispose();
   }
 
@@ -63,14 +45,7 @@ class _AdminAnimalDetectionScreenState
         backgroundColor: Colors.white,
         foregroundColor: deepGreen,
         elevation: 1,
-        actions: [
-          TextButton.icon(
-            onPressed: _loggingSample ? null : _logSampleDetection,
-            icon: const Icon(Icons.pets),
-            label: const Text('Log sample cow'),
-          ),
-          const SizedBox(width: 12),
-        ],
+        actions: const [],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -81,8 +56,6 @@ class _AdminAnimalDetectionScreenState
               _buildHero(deepGreen),
               const SizedBox(height: 20),
               _buildInsightRow(),
-              const SizedBox(height: 24),
-              _buildCameraPanel(),
               const SizedBox(height: 24),
               _buildLiveFeed(),
               const SizedBox(height: 24),
@@ -118,10 +91,7 @@ class _AdminAnimalDetectionScreenState
         children: [
           const Text(
             'Animal signals',
-            style: TextStyle(
-              color: Colors.white70,
-              letterSpacing: 0.5,
-            ),
+            style: TextStyle(color: Colors.white70, letterSpacing: 0.5),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -137,25 +107,6 @@ class _AdminAnimalDetectionScreenState
             spacing: 12,
             runSpacing: 12,
             children: [
-              ElevatedButton.icon(
-                onPressed: _loggingSample ? null : _logSampleDetection,
-                icon: _loggingSample
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Icon(Icons.pets_outlined),
-                label: Text(_loggingSample ? 'Logging...' : 'Log sample cow'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: deepGreen,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                ),
-              ),
               OutlinedButton.icon(
                 onPressed: () {
                   Scrollable.ensureVisible(
@@ -171,8 +122,10 @@ class _AdminAnimalDetectionScreenState
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.white60),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
                 ),
               ),
             ],
@@ -274,12 +227,6 @@ class _AdminAnimalDetectionScreenState
                   fontSize: 18,
                 ),
               ),
-              const Spacer(),
-              IconButton(
-                tooltip: 'Log sample cow',
-                onPressed: _loggingSample ? null : _logSampleDetection,
-                icon: const Icon(Icons.add_circle_outline, color: Colors.green),
-              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -297,8 +244,11 @@ class _AdminAnimalDetectionScreenState
 
               final detections = (snapshot.data ?? [])
                   .where(
-                    (detection) => ['cow', 'mammal', 'mammals']
-                        .contains(detection.type.toLowerCase()),
+                    (detection) => [
+                      'cow',
+                      'mammal',
+                      'mammals',
+                    ].contains(detection.type.toLowerCase()),
                   )
                   .toList();
 
@@ -311,7 +261,11 @@ class _AdminAnimalDetectionScreenState
                   ),
                   child: Column(
                     children: [
-                      const Icon(Icons.sensors_off, color: Colors.grey, size: 48),
+                      const Icon(
+                        Icons.sensors_off,
+                        color: Colors.grey,
+                        size: 48,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'No animal detections yet',
@@ -322,7 +276,7 @@ class _AdminAnimalDetectionScreenState
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Log a sample detection to test the pipeline.',
+                        'Awaiting the first reading from field sensors.',
                         style: TextStyle(color: Colors.grey[600]),
                       ),
                     ],
@@ -330,8 +284,7 @@ class _AdminAnimalDetectionScreenState
                 );
               }
 
-              final feedLength =
-                  detections.length > 5 ? 5 : detections.length;
+              final feedLength = detections.length > 5 ? 5 : detections.length;
               return ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -348,158 +301,6 @@ class _AdminAnimalDetectionScreenState
               );
             },
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCameraPanel() {
-    final accent = const Color(0xFF2E7D32);
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.photo_camera_front_outlined,
-                  color: Color(0xFF1B4332)),
-              const SizedBox(width: 12),
-              Text(
-                'PC camera cow detection',
-                style: TextStyle(
-                  color: const Color(0xFF1B4332),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                tooltip: 'Refresh camera list',
-                onPressed: _cameraInitializing ? null : _initCamera,
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 260,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6),
-                  border: Border.all(color: accent.withOpacity(0.2)),
-                ),
-                child: _cameraError != null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            _cameraError!,
-                            style: const TextStyle(color: Colors.red),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      )
-                    : (_cameraController == null ||
-                            !_cameraController!.value.isInitialized)
-                        ? Center(
-                            child: _cameraInitializing
-                                ? Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: const [
-                                      CircularProgressIndicator(),
-                                      SizedBox(height: 12),
-                                      Text('Waiting for camera permission...'),
-                                    ],
-                                  )
-                                : const Text(
-                                    'Camera unavailable. Ensure a webcam is connected.'),
-                          )
-                        : CameraPreview(_cameraController!),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              ElevatedButton.icon(
-                onPressed:
-                    _cameraDetecting ? null : () => _captureAndDetectCow(),
-                icon: _cameraDetecting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.search),
-                label: Text(
-                  _cameraDetecting ? 'Analyzing frame...' : 'Detect cow now',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Use Chrome/Edge on HTTPS or localhost for webcam access.',
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
-              ),
-            ],
-          ),
-          if (_lastCowResult != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: (_lastCowResult!.detected
-                        ? Colors.green
-                        : Colors.orange)
-                    .withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color:
-                      _lastCowResult!.detected ? Colors.green : Colors.orange,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _lastCowResult!.detected
-                        ? 'Cow signature detected'
-                        : 'No strong cow signature detected',
-                    style: TextStyle(
-                      color: _lastCowResult!.detected
-                          ? Colors.green[700]
-                          : Colors.orange[800],
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Visual confidence: ${(100 * _lastCowResult!.score).toStringAsFixed(1)}%',
-                    style: TextStyle(color: Colors.grey[700]),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -584,7 +385,9 @@ class _AdminAnimalDetectionScreenState
                             ),
                           )
                         : const Icon(Icons.send),
-                    label: Text(_sendingInvite ? 'Sending invite...' : 'Send invite'),
+                    label: Text(
+                      _sendingInvite ? 'Sending invite...' : 'Send invite',
+                    ),
                   ),
                 ),
               ],
@@ -617,8 +420,7 @@ class _AdminAnimalDetectionScreenState
                 );
               }
 
-              final visibleInvites =
-                  invites.length > 5 ? 5 : invites.length;
+              final visibleInvites = invites.length > 5 ? 5 : invites.length;
               return ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -628,8 +430,8 @@ class _AdminAnimalDetectionScreenState
                   final statusColor = invite.status == 'accepted'
                       ? Colors.green
                       : invite.isExpired
-                          ? Colors.red
-                          : accent;
+                      ? Colors.red
+                      : accent;
                   return ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 0),
                     leading: CircleAvatar(
@@ -665,212 +467,6 @@ class _AdminAnimalDetectionScreenState
         ],
       ),
     );
-  }
-
-  Future<void> _initCamera() async {
-    setState(() {
-      _cameraInitializing = true;
-      _cameraError = null;
-    });
-
-    try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) {
-        setState(() {
-          _cameraError =
-              'No cameras were detected. Connect a webcam and retry.';
-        });
-        return;
-      }
-
-      final preferred = cameras.firstWhere(
-        (c) => c.lensDirection == CameraLensDirection.back,
-        orElse: () => cameras.first,
-      );
-
-      final controller = CameraController(
-        preferred,
-        ResolutionPreset.medium,
-        enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
-      );
-      await controller.initialize();
-      try {
-        await controller.setFlashMode(FlashMode.off);
-      } on CameraException catch (_) {
-        // Some webcams (especially on desktop/web) do not support toggling the torch.
-        // Ignore and continue with preview to avoid surfacing a fatal error.
-      }
-
-      setState(() {
-        _cameraController?.dispose();
-        _cameraController = controller;
-      });
-    } catch (e) {
-      setState(() {
-        _cameraError =
-            'Unable to access camera: $e.\nMake sure permissions are granted.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _cameraInitializing = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _captureAndDetectCow() async {
-    if (_cameraController == null ||
-        !_cameraController!.value.isInitialized ||
-        _cameraDetecting) {
-      return;
-    }
-
-    setState(() => _cameraDetecting = true);
-
-    try {
-      final capture = await _cameraController!.takePicture();
-      final bytes = await capture.readAsBytes();
-      final result = await _analyzeCowFrame(bytes);
-
-      if (result.detected) {
-        final now = DateTime.now();
-        final detection = DetectionModel(
-          id: now.millisecondsSinceEpoch.toString(),
-          userId: _auth.currentUser?.uid ?? 'admin',
-          type: 'cow',
-          description:
-              'Camera detected cow-like patterns (${(result.score * 100).toStringAsFixed(1)}% confidence).',
-          imageUrl: null,
-          detectedAt: now,
-          data: {
-            'confidence': result.score,
-            'source': 'pc_camera',
-          },
-        );
-        await _dbService.createDetection(detection);
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _lastCowResult = result;
-      });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result.detected
-                ? 'Cow detected via camera feed.'
-                : 'No cow detected in the last frame.',
-          ),
-          backgroundColor: result.detected ? Colors.green : Colors.orange,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to analyze camera frame: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _cameraDetecting = false);
-      }
-    }
-  }
-
-  Future<_CowDetectionResult> _analyzeCowFrame(Uint8List bytes) async {
-    try {
-      final decoded = img.decodeImage(bytes);
-      if (decoded == null) {
-        return const _CowDetectionResult(false, 0);
-      }
-
-      final image = decoded;
-      final stepX = max(1, image.width ~/ 160);
-      final stepY = max(1, image.height ~/ 120);
-      var total = 0;
-      var cowish = 0;
-
-      for (var y = 0; y < image.height; y += stepY) {
-        for (var x = 0; x < image.width; x += stepX) {
-          final img.Pixel pixel = image.getPixel(x, y);
-          final int r = pixel.r.toInt();
-          final int g = pixel.g.toInt();
-          final int b = pixel.b.toInt();
-          if (_isCowColor(r, g, b)) {
-            cowish++;
-          }
-          total++;
-        }
-      }
-
-      final score = total == 0 ? 0.0 : cowish / total;
-      final detected = score >= 0.18;
-      return _CowDetectionResult(detected, score);
-    } catch (_) {
-      return const _CowDetectionResult(false, 0);
-    }
-  }
-
-  bool _isCowColor(int r, int g, int b) {
-    final brightness = (0.299 * r + 0.587 * g + 0.114 * b);
-    final maxRGB = [r, g, b].reduce(max);
-    final minRGB = [r, g, b].reduce(min);
-    final contrast = maxRGB - minRGB;
-
-    final brownish =
-        r > 90 && g > 60 && b < 120 && (r - g).abs() < 50 && r > b;
-    final darkPatch = brightness < 70 && contrast < 90;
-    final whitePatch = brightness > 190 && contrast < 60;
-
-    return brownish || darkPatch || whitePatch;
-  }
-
-  Future<void> _logSampleDetection() async {
-    if (_loggingSample) return;
-    setState(() => _loggingSample = true);
-
-    try {
-      final now = DateTime.now();
-      final detection = DetectionModel(
-        id: now.millisecondsSinceEpoch.toString(),
-        userId: _auth.currentUser?.uid ?? 'admin',
-        type: 'cow',
-        description: 'Automated barn sensor detected a cow near the north gate.',
-        imageUrl: null,
-        detectedAt: now,
-        data: {
-          'confidence': 0.94,
-          'location': 'North paddock',
-          'heartRate': 68,
-        },
-      );
-
-      await _dbService.createDetection(detection);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sample cow detection logged.'),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to log detection: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _loggingSample = false);
-      }
-    }
   }
 
   Future<void> _sendInvite() async {
@@ -966,10 +562,7 @@ class _InsightTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -983,10 +576,7 @@ class _InsightTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
                 ),
               ],
             ),
@@ -996,11 +586,3 @@ class _InsightTile extends StatelessWidget {
     );
   }
 }
-
-class _CowDetectionResult {
-  final bool detected;
-  final double score;
-
-  const _CowDetectionResult(this.detected, this.score);
-}
-

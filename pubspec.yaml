@@ -41,8 +41,6 @@ dependencies:
   http: ^1.2.0
   cloud_functions: ^6.0.4      # Already updated - this fixed the conflict
   url_launcher: ^6.2.5
-  camera: ^0.11.0+2
-  image: ^4.1.7
   # OR use a dedicated email service like:
   # mailgun: ^1.0.0
   # sendgrid: ^1.0.0

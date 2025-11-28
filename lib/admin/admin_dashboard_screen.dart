@@ -1,13 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import '../models/detection_model.dart';
 import '../services/database_service.dart';
 import '../widgets/detection_card.dart';
 import '../services/weather_service.dart';
 import '../models/weather_model.dart';
 import '../auth/login_screen.dart';
-import 'admin_messages_screen.dart';
 import 'admin_animal_detection_screen.dart';
+import 'admin_friends_screen.dart';
+import 'admin_messages_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -93,6 +94,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               onPressed: () {
                 Navigator.push(
                   context,
+                  MaterialPageRoute(builder: (_) => const AdminFriendsScreen()),
+                );
+              },
+              icon: const Icon(Icons.people_outline),
+              label: const Text('Friend network'),
+              style: TextButton.styleFrom(foregroundColor: deepGreen),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
                   MaterialPageRoute(
                     builder: (_) => const AdminMessagesScreen(),
                   ),
@@ -104,7 +116,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 foregroundColor: const Color(0xFF2E7D32),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 8),
             IconButton(
               tooltip: 'Logout',
               icon: const Icon(Icons.logout),
@@ -140,19 +152,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           },
         ),
       ),
-    );
-  }
-
-  Future<void> _handleLogout() async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      await _dbService.updateUserPresence(isOnline: false, uid: user.uid);
-    }
-    await _auth.signOut();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
     );
   }
 
@@ -258,10 +257,45 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   ),
                 ),
               ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AdminFriendsScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.groups_2_outlined, color: Colors.white),
+                label: const Text(
+                  'Manage friends',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white54),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                ),
+              ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _handleLogout() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await _dbService.updateUserPresence(isOnline: false, uid: user.uid);
+    }
+    await _auth.signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
     );
   }
 
@@ -695,6 +729,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
   Widget _buildWindCard(WeatherModel? weather) {
     final deepGreen = const Color(0xFF1B4332);
+    final bool showWindAlert =
+        weather != null && weather.windSpeed >= 25; // km/h threshold
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -752,6 +788,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 : 'Humidity data pending',
             style: TextStyle(color: Colors.grey[600]),
           ),
+          if (showWindAlert) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: deepGreen.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: deepGreen.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: deepGreen),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Gusty winds detected. Secure nearby equipment.',
+                      style: TextStyle(
+                        color: deepGreen,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -85,15 +85,37 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   AppBar _buildAppBar(Color primaryGreen) {
     return AppBar(
-      backgroundColor: primaryGreen,
-      elevation: 0,
-      title: Text(
-        'Dashboard',
-        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [primaryGreen, Color(0xFF1B5E20)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
       ),
-      actions: [
-        IconButton(icon: Icon(Icons.notifications_outlined), onPressed: () {}),
-      ],
+      elevation: 0,
+      title: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(Icons.agriculture, size: 20),
+          ),
+          SizedBox(width: 12),
+          Text(
+            'Dashboard',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 22,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -166,94 +188,121 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome Header
-          Text(
-            user?.displayName != null
-                ? 'Hello, ${user!.displayName}!'
-                : 'Hello, User!',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: primaryGreen,
+          // Welcome Header with Gradient Card
+          Container(
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [primaryGreen.withOpacity(0.1), Color(0xFFE8F5E9)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: primaryGreen.withOpacity(0.2)),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryGreen.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: primaryGreen,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryGreen.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.wb_sunny_outlined,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.displayName != null
+                            ? 'Hello, ${user!.displayName}!'
+                            : 'Hello, User!',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: primaryGreen,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Welcome back to your dashboard',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: primaryGreen.withOpacity(0.7),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          SizedBox(height: 8),
-          Text(
-            'Welcome back to your dashboard',
-            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-          ),
-          SizedBox(height: 32),
+          SizedBox(height: 24),
 
           // Quick Stats Cards
           Row(
             children: [
               Expanded(child: _buildWeatherCard(_currentWeather)),
-              SizedBox(width: 16),
+              SizedBox(width: 12),
               Expanded(child: _buildWindCard(_currentWeather)),
             ],
           ),
-          SizedBox(height: 32),
+          SizedBox(height: 28),
 
           // Announcements Section
           _buildAnnouncementsSection(),
-          SizedBox(height: 32),
+          SizedBox(height: 28),
 
-          // Recent Detections
-          Text(
-            'Recent Detections',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: primaryGreen,
-            ),
+          // Recent Detections Header
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.notifications_active,
+                  color: primaryGreen,
+                  size: 20,
+                ),
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Recent Detections',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: primaryGreen,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
           ),
           SizedBox(height: 16),
           _buildDetectionsList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 32, color: color),
-          SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
         ],
       ),
     );
@@ -420,11 +469,36 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Scaffold(
       backgroundColor: Color(0xFFF8FFF8),
       appBar: AppBar(
-        backgroundColor: primaryGreen,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [primaryGreen, Color(0xFF1B5E20)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         elevation: 0,
-        title: Text(
-          'Detections',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.camera_alt, size: 20),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Detections',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -432,16 +506,57 @@ class _DashboardScreenState extends State<DashboardScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Detection Categories Header
-            Text(
-              'Detection Categories',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: primaryGreen,
+            // Detection Categories Header with icon
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primaryGreen.withOpacity(0.08), Color(0xFFE8F5E9)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: primaryGreen.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: primaryGreen.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.category, color: primaryGreen, size: 24),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Detection Categories',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: primaryGreen,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'View your farm detections',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: primaryGreen.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 28),
 
             // Detection Icon Buttons Row
             Row(
@@ -450,19 +565,19 @@ class _DashboardScreenState extends State<DashboardScreen>
                 _buildDetectionIconButton(
                   'Animals',
                   Icons.pets,
-                  primaryGreen,
+                  Color(0xFF2E7D32),
                   () => _showDetectionCategory('animals'),
                 ),
                 _buildDetectionIconButton(
                   'Insects',
                   Icons.bug_report,
-                  primaryGreen,
+                  Color(0xFFD84315),
                   () => _showDetectionCategory('insects'),
                 ),
                 _buildDetectionIconButton(
                   'Plant Health',
                   Icons.local_florist,
-                  primaryGreen,
+                  Color(0xFF7CB342),
                   () => _showDetectionCategory('plant_health'),
                 ),
               ],
@@ -479,39 +594,53 @@ class _DashboardScreenState extends State<DashboardScreen>
     Color color,
     VoidCallback onPressed,
   ) {
-    return Column(
-      children: [
-        IconButton(
-          onPressed: onPressed,
-          icon: Container(
-            width: 80,
-            height: 80,
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(20),
+      child: Column(
+        children: [
+          Container(
+            width: 90,
+            height: 90,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [Colors.white, color.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withOpacity(0.2), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
+                  color: color.withOpacity(0.12),
+                  blurRadius: 15,
+                  offset: Offset(0, 6),
                 ),
               ],
             ),
-            child: Icon(icon, size: 32, color: color),
+            child: Center(
+              child: Container(
+                padding: EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, size: 36, color: color),
+              ),
+            ),
           ),
-          iconSize: 80,
-          padding: EdgeInsets.zero,
-        ),
-        SizedBox(height: 8),
-        Text(
-          title,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
+          SizedBox(height: 12),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              letterSpacing: 0.3,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -725,70 +854,100 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return InkWell(
       onTap: () => _showWeatherDetails(weather),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [Colors.white, Color(0xFFFAFDFA)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: primaryGreen.withOpacity(0.15), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: primaryGreen.withOpacity(0.1),
-              blurRadius: 10,
-              offset: Offset(0, 4),
+              blurRadius: 15,
+              offset: Offset(0, 6),
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              weather?.weatherIcon ?? Icons.wb_sunny,
-              color: weather?.weatherColor ?? primaryGreen,
-              size: 40,
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: (weather?.weatherColor ?? primaryGreen).withOpacity(
+                  0.12,
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                weather?.weatherIcon ?? Icons.wb_sunny,
+                color: weather?.weatherColor ?? primaryGreen,
+                size: 32,
+              ),
             ),
-            SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Weather',
-                    style: TextStyle(
-                      color: primaryGreen,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    weather != null
-                        ? '${weather.condition}, ${weather.temperatureString}'
-                        : 'Loading...',
-                    style: TextStyle(
-                      color: primaryGreen.withOpacity(0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                  if (weather?.hasTyphoon ?? false) ...[
-                    SizedBox(height: 4),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+            SizedBox(height: 16),
+            Text(
+              'Weather',
+              style: TextStyle(
+                color: primaryGreen,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              weather != null ? weather.condition : 'Loading...',
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              weather?.temperatureString ?? '--°C',
+              style: TextStyle(
+                color: primaryGreen,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (weather?.hasTyphoon ?? false) ...[
+              SizedBox(height: 10),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.warning, color: Colors.red, size: 12),
+                    SizedBox(width: 4),
+                    Flexible(
                       child: Text(
-                        '⚠️ ${weather!.typhoonWarning}',
+                        weather!.typhoonWarning,
                         style: TextStyle(
-                          color: Colors.red,
+                          color: Colors.red[800],
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -797,55 +956,81 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildWindCard(WeatherModel? weather) {
     final primaryGreen = Color(0xFF2E7D32);
-    final lightGreen = Color(0xFFC8E6C9);
 
     return InkWell(
       onTap: () => _showWeatherDetails(weather),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: lightGreen,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: primaryGreen, width: 1),
+          gradient: LinearGradient(
+            colors: [Color(0xFFC8E6C9), Color(0xFFE8F5E9)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: primaryGreen.withOpacity(0.25), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: primaryGreen.withOpacity(0.12),
+              blurRadius: 15,
+              offset: Offset(0, 6),
+            ),
+          ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.air, color: primaryGreen, size: 40),
-            SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Wind & Humidity',
-                    style: TextStyle(
-                      color: primaryGreen,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    weather != null
-                        ? 'Speed: ${weather.windSpeedString}, ${weather.windDirection}'
-                        : 'Loading...',
-                    style: TextStyle(
-                      color: primaryGreen.withOpacity(0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    weather != null
-                        ? 'Humidity: ${weather.humidityString}'
-                        : '',
-                    style: TextStyle(
-                      color: primaryGreen.withOpacity(0.6),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(14),
               ),
+              child: Icon(Icons.air, color: primaryGreen, size: 32),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Wind & Humidity',
+              style: TextStyle(
+                color: primaryGreen,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              weather != null ? weather.windDirection : 'Loading...',
+              style: TextStyle(
+                color: Colors.grey[800],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              weather != null ? weather.windSpeedString : '--',
+              style: TextStyle(
+                color: primaryGreen,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.water_drop, size: 14, color: Colors.blue[700]),
+                SizedBox(width: 4),
+                Text(
+                  weather?.humidityString ?? '--',
+                  style: TextStyle(
+                    color: Colors.blue[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

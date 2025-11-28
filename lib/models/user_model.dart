@@ -66,7 +66,3 @@ class UserModel {
     return null;
   }
 }
-
-
-
-

@@ -33,38 +33,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFF8FFF8),
       appBar: AppBar(
-        backgroundColor: primaryGreen,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [primaryGreen, Color(0xFF1B5E20)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         elevation: 0,
-        title: Text(
-          'My Profile',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.person, size: 20),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'My Profile',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
         actions: [
           if (!_isEditing)
-            IconButton(
-              icon: Icon(Icons.edit),
-              onPressed: () {
-                setState(() {
-                  _isEditing = true;
-                  _selectedAvatarId ??=
-                      _cachedUser?.avatarStyle ?? defaultAvatarStyle;
-                });
-              },
-              tooltip: 'Edit Profile',
+            Container(
+              margin: EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.edit),
+                onPressed: () {
+                  setState(() {
+                    _isEditing = true;
+                    _selectedAvatarId ??=
+                        _cachedUser?.avatarStyle ?? defaultAvatarStyle;
+                  });
+                },
+                tooltip: 'Edit Profile',
+              ),
             )
           else
-            IconButton(
-              icon: Icon(Icons.check),
-              onPressed: () async {
-                await _saveProfile();
-                setState(() {
-                  _isEditing = false;
-                  _selectedAvatarId = null;
-                });
-              },
-              tooltip: 'Save Changes',
+            Container(
+              margin: EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.check),
+                onPressed: () async {
+                  await _saveProfile();
+                  setState(() {
+                    _isEditing = false;
+                    _selectedAvatarId = null;
+                  });
+                },
+                tooltip: 'Save Changes',
+              ),
             ),
         ],
       ),
@@ -89,40 +128,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return SingleChildScrollView(
             child: Column(
               children: [
-                // Farm Header Image
+                // Farm Header Banner
                 Container(
-                  height: 200,
+                  height: 180,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage(
-                        'assets/images/farm_header.jpg',
-                      ), // Add farm image to assets
-                      fit: BoxFit.cover,
-                      colorFilter: ColorFilter.mode(
-                        primaryGreen.withOpacity(0.3),
-                        BlendMode.overlay,
-                      ),
-                    ),
                     gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [primaryGreen, primaryGreen.withOpacity(0.7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        primaryGreen,
+                        Color(0xFF1B5E20),
+                        primaryGreen.withOpacity(0.85),
+                      ],
                     ),
                   ),
                   child: Stack(
                     children: [
+                      // Decorative Pattern
+                      Positioned.fill(
+                        child: Opacity(
+                          opacity: 0.1,
+                          child: CustomPaint(painter: _PatternPainter()),
+                        ),
+                      ),
                       // Farm Icon Overlay
                       Center(
                         child: Container(
-                          padding: EdgeInsets.all(16),
+                          padding: EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white,
+                                Colors.white.withOpacity(0.95),
+                              ],
+                            ),
                             shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 20,
+                                offset: Offset(0, 10),
+                              ),
+                            ],
                           ),
                           child: Icon(
                             Icons.agriculture,
-                            size: 40,
+                            size: 48,
                             color: primaryGreen,
                           ),
                         ),
@@ -134,15 +186,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Profile Information Card
                 Container(
                   margin: EdgeInsets.all(20),
-                  padding: EdgeInsets.all(24),
+                  padding: EdgeInsets.all(28),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [Colors.white, Color(0xFFFAFDFA)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: primaryGreen.withOpacity(0.15),
+                      width: 1.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: primaryGreen.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
+                        color: primaryGreen.withOpacity(0.12),
+                        blurRadius: 20,
+                        offset: Offset(0, 8),
                       ),
                     ],
                   ),
@@ -369,13 +429,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   margin: EdgeInsets.symmetric(horizontal: 20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [Colors.white, Color(0xFFFAFDFA)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: primaryGreen.withOpacity(0.15),
+                      width: 1.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: primaryGreen.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
+                        blurRadius: 15,
+                        offset: Offset(0, 6),
                       ),
                     ],
                   ),
@@ -475,26 +543,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     final primaryGreen = Color(0xFF2E7D32);
 
-    return ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      leading: Container(
-        padding: EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: primaryGreen.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: primaryGreen, size: 24),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(fontWeight: FontWeight.w600, color: primaryGreen),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-      ),
-      trailing: Icon(Icons.chevron_right, color: primaryGreen.withOpacity(0.5)),
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    primaryGreen.withOpacity(0.15),
+                    primaryGreen.withOpacity(0.08),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: primaryGreen, size: 24),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: primaryGreen,
+                      fontSize: 16,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: primaryGreen.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios,
+                color: primaryGreen.withOpacity(0.6),
+                size: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1117,4 +1222,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return '${time.day}/${time.month}/${time.year}';
   }
+}
+
+// Decorative pattern painter for profile header
+class _PatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    // Draw decorative circles
+    for (var i = 0; i < 5; i++) {
+      for (var j = 0; j < 3; j++) {
+        final x = (i * size.width / 4) + (size.width / 8);
+        final y = (j * size.height / 2) + (size.height / 4);
+        canvas.drawCircle(Offset(x, y), 30, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PatternPainter oldDelegate) => false;
 }

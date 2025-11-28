@@ -122,6 +122,43 @@ class DatabaseService {
     await _firestore.collection('friends').doc(requestId2).delete();
   }
 
+  Future<void> connectWithUser(String friendId) async {
+    final currentUserId = _auth.currentUser?.uid;
+    if (currentUserId == null) return;
+
+    final directId = '$currentUserId-$friendId';
+    final reverseId = '$friendId-$currentUserId';
+    final friendsCollection = _firestore.collection('friends');
+    final timestamp = DateTime.now().toIso8601String();
+
+    final reverseDoc = await friendsCollection.doc(reverseId).get();
+    if (reverseDoc.exists) {
+      await friendsCollection.doc(reverseId).update({
+        'status': 'accepted',
+        'updatedAt': timestamp,
+      });
+      return;
+    }
+
+    final directDoc = await friendsCollection.doc(directId).get();
+    if (directDoc.exists) {
+      await friendsCollection.doc(directId).update({
+        'status': 'accepted',
+        'updatedAt': timestamp,
+      });
+      return;
+    }
+
+    await friendsCollection.doc(directId).set({
+      'id': directId,
+      'userId': currentUserId,
+      'friendId': friendId,
+      'status': 'accepted',
+      'createdAt': timestamp,
+      'updatedAt': timestamp,
+    });
+  }
+
   Stream<List<String>> getFriends(String userId) {
     return _firestore.collection('friends').snapshots().map((snapshot) {
       final friendIds = <String>{};
