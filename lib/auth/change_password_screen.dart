@@ -5,12 +5,10 @@ import 'login_screen.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   final String email;
-  final bool otpVerified;
 
   const ChangePasswordScreen({
     super.key,
     required this.email,
-    this.otpVerified = false,
   });
 
   @override
@@ -25,17 +23,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Future<void> _changePassword() async {
     if (!_formKey.currentState!.validate()) return;
-
-    // Check if OTP is verified
-    if (!widget.otpVerified) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please verify OTP first'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(

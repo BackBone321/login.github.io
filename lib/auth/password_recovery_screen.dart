@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
-import '../services/otp_service.dart';
-import 'verify_code_screen.dart';
 
 class PasswordRecoveryScreen extends StatefulWidget {
   const PasswordRecoveryScreen({super.key});
@@ -14,57 +13,50 @@ class PasswordRecoveryScreen extends StatefulWidget {
 class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _otpService = OTPService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _isLoading = false;
 
-  Future<void> _sendCode() async {
+  Future<void> _sendResetEmail() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
     try {
       final email = _emailController.text.trim();
 
-      // Generate and send OTP using YOUR custom system only
-      final otpCode = await _otpService.sendOTPForPasswordChange(email);
+      await _auth.sendPasswordResetEmail(email: email);
 
-      // Show success message with OTP (for testing)
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('OTP sent to your email.'),
-              SizedBox(height: 4),
-              Text(
-                'TEST OTP: $otpCode',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text('Check your console for details.'),
-            ],
+          content: Text(
+            'Password reset email sent! Please check your inbox to verify.',
           ),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 10),
         ),
       );
 
-      // Navigate to verify code screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => VerifyCodeScreen(email: email)),
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final message = e.code == 'user-not-found'
+          ? 'No account found for that email.'
+          : (e.message ?? 'Failed to send reset email.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to send code: ${e.toString()}'),
+          content: Text('Failed to send reset email: $e'),
           backgroundColor: Colors.red,
         ),
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -123,7 +115,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
               ),
               SizedBox(height: 8),
               Text(
-                'Enter your email and we\'ll send you a verification code to reset your password',
+                'Enter your email and we\'ll send you a verification link to reset your password',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
@@ -146,8 +138,8 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
 
                     // Send Code Button
                     CustomButton(
-                      text: 'Send Verification Code',
-                      onPressed: _isLoading ? null : _sendCode,
+                      text: 'Send Verification Email',
+                      onPressed: _isLoading ? null : _sendResetEmail,
                       isLoading: _isLoading,
                       isPrimary: true,
                     ),

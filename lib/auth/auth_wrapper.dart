@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
+import 'email_otp_screen.dart';
 import '../services/database_service.dart';
 import '../services/admin_gatekeeper.dart';
 import '../models/user_model.dart';
@@ -98,6 +99,21 @@ class AuthWrapper extends StatelessWidget {
             }
 
             final profile = userSnapshot.data;
+            if (profile == null) {
+              return _buildLoadingShell();
+            }
+
+            final shouldOpenAdminDashboard =
+                shouldRouteToAdmin(profile, firebaseUser.email);
+
+            if (profile.isEmailVerified != true) {
+              return EmailOtpScreen(
+                email: firebaseUser.email ?? '',
+                userId: firebaseUser.uid,
+                shouldOpenAdmin: shouldOpenAdminDashboard,
+              );
+            }
+
             if (shouldRouteToAdmin(profile, firebaseUser.email)) {
               return const AdminDashboardScreen();
             }

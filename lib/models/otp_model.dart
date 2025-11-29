@@ -38,26 +38,15 @@ class OTPModel {
       email: map['email'] ?? '',
       code: map['code'] ?? '',
       purpose: map['purpose'] ?? '',
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'])
-          : DateTime.now(),
-      expiresAt: map['expiresAt'] != null
-          ? DateTime.parse(map['expiresAt'])
-          : DateTime.now(),
+      createdAt: DateTime.tryParse(map['createdAt'] ?? '') ?? DateTime.now(),
+      expiresAt: DateTime.tryParse(map['expiresAt'] ?? '') ?? DateTime.now(),
       isUsed: map['isUsed'] ?? false,
       attempts: map['attempts'] ?? 0,
     );
   }
 
-  bool get isValid {
-    return !isUsed && !isExpired && attempts < 3;
-  }
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
 
-  bool get isExpired {
-    return DateTime.now().isAfter(expiresAt);
-  }
-
-  bool get hasExceededAttempts {
-    return attempts >= 3;
-  }
+  bool get hasExceededAttempts => attempts >= 3;
 }
+

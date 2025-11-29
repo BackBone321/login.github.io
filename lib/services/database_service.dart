@@ -523,6 +523,21 @@ class DatabaseService {
     });
   }
 
+  Future<void> deleteGroup(String groupId) async {
+    final groupRef = _firestore.collection('groups').doc(groupId);
+
+    final messagesSnapshot = await _firestore
+        .collection('group_messages')
+        .where('groupId', isEqualTo: groupId)
+        .get();
+
+    for (final doc in messagesSnapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    await groupRef.delete();
+  }
+
   // Group Message Methods
   Future<void> sendGroupMessage(GroupMessageModel message) async {
     await _firestore

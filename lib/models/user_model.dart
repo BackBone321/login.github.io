@@ -8,6 +8,7 @@ class UserModel {
   final String? displayName;
   final String? photoUrl;
   final bool isAdmin;
+  final bool isEmailVerified;
   final String? bio;
   final DateTime createdAt;
   final bool isOnline;
@@ -20,6 +21,7 @@ class UserModel {
     this.displayName,
     this.photoUrl,
     this.isAdmin = false,
+    this.isEmailVerified = false,
     this.bio,
     required this.createdAt,
     this.isOnline = false,
@@ -34,6 +36,7 @@ class UserModel {
       'displayName': displayName,
       'photoUrl': photoUrl,
       'isAdmin': isAdmin,
+      'isEmailVerified': isEmailVerified,
       'bio': bio,
       'createdAt': createdAt.toIso8601String(),
       'isOnline': isOnline,
@@ -49,6 +52,7 @@ class UserModel {
       displayName: map['displayName'],
       photoUrl: map['photoUrl'],
       isAdmin: map['isAdmin'] ?? false,
+      isEmailVerified: map['isEmailVerified'] ?? false,
       bio: map['bio'],
       createdAt: _parseDate(map['createdAt']) ?? DateTime.now(),
       isOnline: map['isOnline'] ?? false,

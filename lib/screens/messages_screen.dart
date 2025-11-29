@@ -1077,30 +1077,29 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
             ),
           ),
           // Message input
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: lightGreen,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: SafeArea(
-                      top: false,
-                      bottom: false,
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: lightGreen,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
                       child: Row(
                         children: [
                           IconButton(
@@ -1126,47 +1125,43 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                               textCapitalization: TextCapitalization.sentences,
                             ),
                           ),
-                          SizedBox(width: 8),
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: primaryGreen,
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.send,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                              onPressed: () async {
-                                if (_messageController.text.trim().isNotEmpty) {
-                                  final message = MessageModel(
-                                    id: DateTime.now().millisecondsSinceEpoch
-                                        .toString(),
-                                    senderId: _auth.currentUser!.uid,
-                                    receiverId: widget.otherUser.uid,
-                                    senderName:
-                                        _auth.currentUser!.displayName ??
-                                        _auth.currentUser!.email ??
-                                        'User',
-                                    content: _messageController.text.trim(),
-                                    timestamp: DateTime.now(),
-                                    isRead: false,
-                                  );
-                                  await _dbService.sendMessage(message);
-                                  _messageController.clear();
-                                }
-                              },
-                            ),
-                          ),
                         ],
                       ),
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(width: 12),
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: primaryGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.send, color: Colors.white, size: 20),
+                      onPressed: () async {
+                        if (_messageController.text.trim().isNotEmpty) {
+                          final message = MessageModel(
+                            id: DateTime.now().millisecondsSinceEpoch
+                                .toString(),
+                            senderId: _auth.currentUser!.uid,
+                            receiverId: widget.otherUser.uid,
+                            senderName:
+                                _auth.currentUser!.displayName ??
+                                _auth.currentUser!.email ??
+                                'User',
+                            content: _messageController.text.trim(),
+                            timestamp: DateTime.now(),
+                            isRead: false,
+                          );
+                          await _dbService.sendMessage(message);
+                          _messageController.clear();
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -1320,6 +1315,54 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
     _launchVideoCall(context, roomId);
   }
 
+  Future<void> _confirmDeleteGroup() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Group', style: TextStyle(color: Color(0xFF2E7D32))),
+        content: Text(
+          'This will permanently remove this group and all of its messages. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _dbService.deleteGroup(widget.group.id);
+        if (!mounted) return;
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Group deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete group'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _leaveGroup() async {
     final currentUid = _auth.currentUser!.uid;
     final isCreator = widget.group.creatorId == currentUid;
@@ -1425,6 +1468,8 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                 _showAddMembersDialog();
               } else if (value == 'leave_group' && !isCreator) {
                 _leaveGroup();
+              } else if (value == 'delete_group' && isCreator) {
+                _confirmDeleteGroup();
               }
             },
             itemBuilder: (context) => [
@@ -1468,6 +1513,17 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                       Icon(Icons.exit_to_app, color: Colors.red),
                       SizedBox(width: 8),
                       Text('Leave Group', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              if (isCreator)
+                PopupMenuItem(
+                  value: 'delete_group',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_forever, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete Group', style: TextStyle(color: Colors.red)),
                     ],
                   ),
                 ),

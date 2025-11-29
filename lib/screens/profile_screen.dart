@@ -1035,111 +1035,125 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(12),
-              ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+        return FractionallySizedBox(
+          heightFactor: 0.9,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            Text(
-              'Choose Your Guardian',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: primaryGreen,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Pick a character who represents your farming spirit.',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 20),
-            SizedBox(
-              height: 360,
-              child: GridView.count(
-                crossAxisCount: 2,
-                mainAxisSpacing: 14,
-                crossAxisSpacing: 14,
-                childAspectRatio: 0.85,
-                children: guardianAvatarOptions.map((character) {
-                  final isSelected = character.id == currentId;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedAvatarId = character.id;
-                      });
-                      Navigator.pop(context);
-                    },
-                    child: AnimatedContainer(
-                      duration: Duration(milliseconds: 250),
-                      padding: EdgeInsets.all(14),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 24),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected ? primaryGreen : Colors.transparent,
-                          width: 2,
-                        ),
-                        color: isSelected
-                            ? primaryGreen.withOpacity(0.08)
-                            : Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          GuardianAvatar(
-                            style: character.id,
-                            size: 64,
-                            addShadow: false,
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            character.name,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: primaryGreen,
-                            ),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            character.tagline,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                              height: 1.3,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                  );
-                }).toList(),
+                    Text(
+                      'Choose Your Guardian',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: primaryGreen,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Pick a character who represents your farming spirit.',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 20),
+                    Expanded(
+                      child: GridView.count(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 14,
+                        crossAxisSpacing: 14,
+                        childAspectRatio: 0.85,
+                        physics: BouncingScrollPhysics(),
+                        children: guardianAvatarOptions.map((character) {
+                          final isSelected = character.id == currentId;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedAvatarId = character.id;
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: AnimatedContainer(
+                              duration: Duration(milliseconds: 250),
+                              padding: EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? primaryGreen
+                                      : Colors.transparent,
+                                  width: 2,
+                                ),
+                                color: isSelected
+                                    ? primaryGreen.withOpacity(0.08)
+                                    : Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  GuardianAvatar(
+                                    style: character.id,
+                                    size: 64,
+                                    addShadow: false,
+                                  ),
+                                  SizedBox(height: 12),
+                                  Text(
+                                    character.name,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: primaryGreen,
+                                    ),
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    character.tagline,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                      height: 1.3,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
