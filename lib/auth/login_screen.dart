@@ -3,13 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
 import '../services/database_service.dart';
-import '../services/otp_service.dart';
 import '../services/admin_gatekeeper.dart';
 import '../models/user_model.dart';
 import 'password_recovery_screen.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
-import 'email_otp_screen.dart';
 import '../admin/admin_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -23,7 +21,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailPhoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final OTPService _otpService = OTPService();
   bool _isLoading = false;
 
   Future<void> _login() async {
@@ -77,31 +74,6 @@ class _LoginScreenState extends State<LoginScreen> {
           await dbService.updateUser(firebaseUser.uid, {'isAdmin': true});
         }
         shouldOpenAdmin = isAdminAccount || userModel.isAdmin;
-      }
-
-      final isVerified = userModel.isEmailVerified;
-      if (!isVerified) {
-        await _otpService.sendSignupOtp(firebaseUser.email!);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Enter the verification code sent to ${firebaseUser.email}',
-            ),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EmailOtpScreen(
-              email: firebaseUser.email!,
-              userId: firebaseUser.uid,
-              shouldOpenAdmin: shouldOpenAdmin,
-            ),
-          ),
-        );
-        return;
       }
 
       // Success - AuthWrapper will automatically navigate to HomeScreen

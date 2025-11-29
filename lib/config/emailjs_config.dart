@@ -4,3 +4,4 @@ class EmailJsConfig {
   static const String templateId = 'template_cp368bp';
   static const String publicKey = 'ORSGxHfkgWz4A7WVd';
 }
+

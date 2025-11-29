@@ -236,3 +236,4 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
     super.dispose();
   }
 }
+
