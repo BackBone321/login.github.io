@@ -19,7 +19,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _otpService = OTPService();
@@ -261,15 +260,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       icon: Icons.email,
                     ),
                     SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _phoneController,
-                      label: 'Phone Number',
-                      keyboardType: TextInputType.phone,
-                      validator: (val) =>
-                          val!.isEmpty ? 'Phone number is required' : null,
-                      icon: Icons.phone,
-                    ),
-                    SizedBox(height: 16),
+
                     CustomTextField(
                       controller: _passwordController,
                       label: 'Password',
@@ -341,7 +332,6 @@ class _SignupScreenState extends State<SignupScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
