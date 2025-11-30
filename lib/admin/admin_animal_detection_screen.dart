@@ -1,12 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../models/detection_model.dart';
 import '../models/detection_access_model.dart';
-import '../models/invite_model.dart';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
-import '../services/email_service.dart';
 import '../widgets/detection_card.dart';
 
 class AdminAnimalDetectionScreen extends StatefulWidget {
@@ -20,15 +17,7 @@ class AdminAnimalDetectionScreen extends StatefulWidget {
 class _AdminAnimalDetectionScreenState
     extends State<AdminAnimalDetectionScreen> {
   final DatabaseService _dbService = DatabaseService();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _messageController = TextEditingController();
   final TextEditingController _userSearchController = TextEditingController();
-
-  final GlobalKey<FormState> _inviteFormKey = GlobalKey<FormState>();
-
-  bool _sendingInvite = false;
-  bool _shareDetections = true;
 
   static const List<_DetectionCategoryOption> _detectionCategories = [
     _DetectionCategoryOption(
@@ -67,8 +56,6 @@ class _AdminAnimalDetectionScreenState
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _messageController.dispose();
     _userSearchController.dispose();
     super.dispose();
   }
@@ -98,8 +85,6 @@ class _AdminAnimalDetectionScreenState
               _buildInsightRow(),
               const SizedBox(height: 24),
               _buildLiveFeed(),
-              const SizedBox(height: 24),
-              _buildInvitePanel(),
               const SizedBox(height: 24),
               _buildUserAccessManager(),
             ],
@@ -145,32 +130,13 @@ class _AdminAnimalDetectionScreenState
             ),
           ),
           const SizedBox(height: 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () {
-                  Scrollable.ensureVisible(
-                    _inviteFormKey.currentContext ?? context,
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.easeOut,
-                  );
-                },
-                icon: const Icon(Icons.mail),
-                label: const Text(
-                  'Invite collaborators',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.white60),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 14,
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: 8),
+          Text(
+            'Use detection access control to grant or revoke live feed visibility.',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.85),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -352,210 +318,6 @@ class _AdminAnimalDetectionScreenState
     );
   }
 
-  Widget _buildInvitePanel() {
-    final accent = const Color(0xFF2E7D32);
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.group_add, color: Color(0xFF1B4332)),
-              const SizedBox(width: 12),
-              Text(
-                'Invite collaborators',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1B4332),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Form(
-            key: _inviteFormKey,
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'User email',
-                    hintText: 'farmer@example.com',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Email is required';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _messageController,
-                  decoration: const InputDecoration(
-                    labelText: 'Message (optional)',
-                    prefixIcon: Icon(Icons.note_alt_outlined),
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile.adaptive(
-                  value: _shareDetections,
-                  onChanged: (value) {
-                    setState(() => _shareDetections = value);
-                  },
-                  title: const Text('Share live detections'),
-                  subtitle: const Text(
-                    'Grant real-time detection access without waiting for approval',
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                  activeColor: const Color(0xFF2E7D32),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _sendingInvite ? null : _sendInvite,
-                    icon: _sendingInvite
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.send),
-                    label: Text(
-                      _sendingInvite ? 'Sending invite...' : 'Send invite',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Recent invites',
-            style: TextStyle(
-              color: Colors.grey[700],
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          StreamBuilder<List<InviteModel>>(
-            stream: _dbService.getInvites(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final invites = snapshot.data!;
-              if (invites.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    'No invites yet. Send one to grant access to detection feeds.',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                );
-              }
-
-              final visibleInvites = invites.length > 5 ? 5 : invites.length;
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: visibleInvites,
-                itemBuilder: (context, index) {
-                  final invite = invites[index];
-                  final statusColor = invite.status == 'accepted'
-                      ? Colors.green
-                      : invite.isExpired
-                      ? Colors.red
-                      : accent;
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 0),
-                    leading: CircleAvatar(
-                      backgroundColor: statusColor.withOpacity(0.15),
-                      child: Icon(Icons.person_add, color: statusColor),
-                    ),
-                    title: Text(invite.email),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Code: ${invite.code} • Expires ${_formatDate(invite.expiresAt)}',
-                        ),
-                        if (invite.shareDetections)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(
-                                  Icons.visibility_outlined,
-                                  size: 16,
-                                  color: Color(0xFF2E7D32),
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Shares detection feed',
-                                  style: TextStyle(
-                                    color: Color(0xFF2E7D32),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        invite.isExpired ? 'expired' : invite.status,
-                        style: TextStyle(
-                          color: statusColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildUserAccessManager() {
     final accent = const Color(0xFF1B4332);
     final cardBackground = Colors.white;
@@ -590,6 +352,12 @@ class _AdminAnimalDetectionScreenState
                   fontWeight: FontWeight.w700,
                   color: accent,
                 ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _showAccessSummary,
+                icon: const Icon(Icons.list_alt_outlined),
+                label: const Text('View access list'),
               ),
             ],
           ),
@@ -735,50 +503,6 @@ class _AdminAnimalDetectionScreenState
         ],
       ),
     );
-  }
-
-  Future<void> _sendInvite() async {
-    if (!_inviteFormKey.currentState!.validate()) return;
-
-    setState(() => _sendingInvite = true);
-    final email = _emailController.text.trim();
-    final note = _messageController.text.trim().isEmpty
-        ? null
-        : _messageController.text.trim();
-    final adminName =
-        _auth.currentUser?.displayName ?? _auth.currentUser?.email ?? 'Admin';
-
-    try {
-      final invite = await _dbService.createInvite(
-        email,
-        message: note,
-        shareDetections: _shareDetections,
-      );
-      await EmailService.sendInviteEmail(
-        invite.email,
-        invite.code,
-        invitedBy: adminName,
-      );
-
-      if (!mounted) return;
-      _emailController.clear();
-      _messageController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invitation sent successfully')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to send invite: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _sendingInvite = false);
-      }
-    }
   }
 
   bool _matchesUserSearch(UserModel user) {
@@ -996,16 +720,107 @@ class _AdminAnimalDetectionScreenState
     );
   }
 
-  String _formatDate(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-  }
-
   bool _matchesDetectionTags(String detectionType, List<String> tags) {
     final normalized = detectionType.toLowerCase();
     for (final tag in tags) {
       if (normalized.contains(tag)) return true;
     }
     return false;
+  }
+
+  Future<void> _showAccessSummary() async {
+    final records = await _dbService.getDetectionAccessList().first;
+    final granted = records.where((r) => r.canAccess).toList();
+    final userMap = <String, UserModel?>{};
+    for (final record in granted) {
+      userMap[record.userId] = await _dbService.getUser(record.userId);
+    }
+    if (!mounted) return;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        final primaryGreen = const Color(0xFF1B4332);
+        if (granted.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_open, size: 40, color: Colors.grey[500]),
+                const SizedBox(height: 12),
+                Text(
+                  'No users currently have detection access.',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).padding.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.verified_user_outlined, color: primaryGreen),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Users with detection access',
+                    style: TextStyle(
+                      color: primaryGreen,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: granted.length,
+                  separatorBuilder: (_, __) => const Divider(),
+                  itemBuilder: (context, index) {
+                    final record = granted[index];
+                    final user = userMap[record.userId];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: primaryGreen.withOpacity(0.1),
+                        child: Icon(Icons.person, color: primaryGreen),
+                      ),
+                      title: Text(
+                        user?.displayName ?? user?.email ?? 'Unknown',
+                      ),
+                      subtitle: Text(
+                        _formatAllowedTypes(record),
+                        style: TextStyle(
+                          color: primaryGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      trailing: Text(
+                        user?.email ?? record.userId,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

@@ -405,29 +405,13 @@ class DatabaseService {
     return _firestore
         .collection('announcements')
         .orderBy('createdAt', descending: true)
+        .limit(50)
         .snapshots()
-        .asyncMap((snapshot) async {
-          // Get user's friends
-          final friendsSnapshot = await _firestore
-              .collection('friends')
-              .where('userId', isEqualTo: userId)
-              .where('status', isEqualTo: 'accepted')
-              .get();
-
-          final friendIds = friendsSnapshot.docs
-              .map((doc) => doc.data()['friendId'] as String)
-              .toList();
-          friendIds.add(userId); // Include own announcements
-
-          // Filter announcements to only show from friends
-          return snapshot.docs
-              .where((doc) {
-                final data = doc.data();
-                return friendIds.contains(data['userId']);
-              })
+        .map(
+          (snapshot) => snapshot.docs
               .map((doc) => AnnouncementModel.fromMap(doc.data()))
-              .toList();
-        });
+              .toList(),
+        );
   }
 
   // Detection operations
@@ -452,8 +436,18 @@ class DatabaseService {
 
   Stream<List<DetectionModel>> getDetectionsForUser(String userId) async* {
     final user = await getUser(userId);
+    final adminSnapshot = await _firestore
+        .collection('users')
+        .where('isAdmin', isEqualTo: true)
+        .limit(1)
+        .get();
+
+    if (adminSnapshot.docs.isEmpty) {
+      yield [];
+      return;
+    }
+
     if (user?.isAdmin == true) {
-      // Admin sees all detections
       yield* _firestore
           .collection('detections')
           .orderBy('detectedAt', descending: true)
@@ -463,54 +457,49 @@ class DatabaseService {
                 .map((doc) => DetectionModel.fromMap(doc.data()))
                 .toList(),
           );
-    } else {
-      // Check if user is friend with admin
-      final adminSnapshot = await _firestore
-          .collection('users')
-          .where('isAdmin', isEqualTo: true)
-          .limit(1)
-          .get();
-
-      if (adminSnapshot.docs.isNotEmpty) {
-        final adminId = adminSnapshot.docs.first.id;
-        List<String>? allowedTypes;
-        bool hasAccess = await areFriends(userId, adminId);
-
-        if (hasAccess) {
-          allowedTypes = null;
-        } else if (await _hasSharedDetectionInvite(user?.email)) {
-          hasAccess = true;
-          allowedTypes = null;
-        } else {
-          final manualAccess = await _getDetectionAccess(userId);
-          if (manualAccess?.canAccess == true) {
-            hasAccess = true;
-            allowedTypes = manualAccess?.allowedTypes;
-          }
-        }
-
-        if (hasAccess) {
-          final selectedTypes = allowedTypes;
-          // Authorized users see admin detections (optionally filtered)
-          yield* _firestore
-              .collection('detections')
-              .where('userId', isEqualTo: adminId)
-              .orderBy('detectedAt', descending: true)
-              .snapshots()
-              .map(
-                (snapshot) => snapshot.docs
-                    .map((doc) => DetectionModel.fromMap(doc.data()))
-                    .where(
-                      (detection) => _isDetectionTypeAllowed(
-                        detection.type.toLowerCase(),
-                        selectedTypes,
-                      ),
-                    )
-                    .toList(),
-              );
-        }
-      }
+      return;
     }
+
+    final adminId = adminSnapshot.docs.first.id;
+    bool hasAccess = false;
+    List<String>? allowedTypes;
+
+    final manualAccess = await _getDetectionAccess(userId);
+    if (manualAccess != null) {
+      if (manualAccess.canAccess != true) {
+        yield [];
+        return;
+      }
+      hasAccess = true;
+      allowedTypes = manualAccess.allowedTypes;
+    } else {
+      hasAccess =
+          await areFriends(userId, adminId) ||
+          await _hasSharedDetectionInvite(user?.email);
+    }
+
+    if (!hasAccess) {
+      yield [];
+      return;
+    }
+
+    final selectedTypes = allowedTypes;
+    yield* _firestore
+        .collection('detections')
+        .where('userId', isEqualTo: adminId)
+        .orderBy('detectedAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => DetectionModel.fromMap(doc.data()))
+              .where(
+                (detection) => _isDetectionTypeAllowed(
+                  detection.type.toLowerCase(),
+                  selectedTypes,
+                ),
+              )
+              .toList(),
+        );
   }
 
   Stream<List<DetectionModel>> getAllDetections() {

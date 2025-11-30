@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../models/announcement_model.dart';
 import '../models/detection_model.dart';
 import '../services/database_service.dart';
 import '../widgets/detection_card.dart';
@@ -10,6 +11,7 @@ import 'admin_animal_detection_screen.dart';
 import 'admin_audit_screen.dart';
 import 'admin_friends_screen.dart';
 import 'admin_messages_screen.dart';
+import 'widgets/announcement_composer.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -281,6 +283,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 icon: const Icon(Icons.groups_2_outlined, color: Colors.white),
                 label: const Text(
                   'Manage friends',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white54),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _showAnnouncementComposer,
+                icon: const Icon(Icons.campaign_outlined, color: Colors.white),
+                label: const Text(
+                  'Broadcast announcement',
                   style: TextStyle(color: Colors.white),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -650,6 +667,49 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _showAnnouncementComposer() async {
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AnnouncementComposer(
+        onSubmit: _submitAnnouncement,
+        onCancel: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
+  }
+
+  Future<void> _submitAnnouncement(String title, String body) async {
+    final user = _auth.currentUser;
+    final announcement = AnnouncementModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: user?.uid ?? 'admin',
+      userName: user?.displayName ?? user?.email ?? 'Admin',
+      title: title,
+      content: body,
+      createdAt: DateTime.now(),
+    );
+
+    try {
+      await _dbService.createAnnouncement(announcement);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Announcement published to all dashboards'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to publish announcement: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      rethrow;
+    }
   }
 
   int _countByTypes(List<DetectionModel> detections, List<String> types) {
