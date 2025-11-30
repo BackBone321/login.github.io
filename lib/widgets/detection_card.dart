@@ -13,9 +13,7 @@ class DetectionCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -46,35 +44,28 @@ class DetectionCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            if (detection.imageUrl != null && detection.imageUrl!.isNotEmpty) ...[
+            if (detection.imageUrl != null &&
+                detection.imageUrl!.isNotEmpty) ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: AspectRatio(
                   aspectRatio: 4 / 3,
-                  child: Image.network(
-                    detection.imageUrl!,
-                    fit: BoxFit.cover,
-                  ),
+                  child: Image.network(detection.imageUrl!, fit: BoxFit.cover),
                 ),
               ),
               const SizedBox(height: 8),
             ],
-            if (detection.description != null && detection.description!.isNotEmpty) ...[
+            if (detection.description != null &&
+                detection.description!.isNotEmpty) ...[
               Text(
                 detection.description!,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
               const SizedBox(height: 4),
             ],
             Text(
               _formatDate(detection.detectedAt),
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 11,
-              ),
+              style: TextStyle(color: Colors.grey[500], fontSize: 11),
             ),
           ],
         ),
@@ -83,40 +74,33 @@ class DetectionCard extends StatelessWidget {
   }
 
   static _DetectionTypeInfo _iconAndTitleForType(String type) {
-    IconData icon;
-    String title;
-
-    switch (type) {
-      case 'cow':
-      case 'mammal':
-      case 'mammals':
-        icon = Icons.pets;
-        title = 'Mammals Detection';
-        break;
-      case 'insect':
-      case 'pest':
-        icon = Icons.bug_report;
-        title = 'Pest Detection';
-        break;
-      case 'plant_health':
-      case 'health_plant':
-        icon = Icons.local_florist;
-        title = 'Plant Health Detection';
-        break;
-      case 'weather':
-        icon = Icons.wb_sunny;
-        title = 'Weather Detection';
-        break;
-      case 'wind':
-        icon = Icons.air;
-        title = 'Wind Detection';
-        break;
-      default:
-        icon = Icons.notifications;
-        title = 'Detection';
+    final normalized = type.toLowerCase();
+    if (normalized.contains('cow') ||
+        normalized.contains('animal') ||
+        normalized.contains('livestock') ||
+        normalized.contains('mammal')) {
+      return const _DetectionTypeInfo(Icons.pets, 'Mammals Detection');
     }
-
-    return _DetectionTypeInfo(icon, title);
+    if (normalized.contains('insect') ||
+        normalized.contains('pest') ||
+        normalized.contains('bug')) {
+      return const _DetectionTypeInfo(Icons.bug_report, 'Pest Detection');
+    }
+    if (normalized.contains('plant') ||
+        normalized.contains('crop') ||
+        normalized.contains('health')) {
+      return const _DetectionTypeInfo(
+        Icons.local_florist,
+        'Plant Health Detection',
+      );
+    }
+    if (normalized.contains('weather')) {
+      return const _DetectionTypeInfo(Icons.wb_sunny, 'Weather Detection');
+    }
+    if (normalized.contains('wind')) {
+      return const _DetectionTypeInfo(Icons.air, 'Wind Detection');
+    }
+    return const _DetectionTypeInfo(Icons.notifications, 'Detection');
   }
 
   static String _formatDate(DateTime date) {

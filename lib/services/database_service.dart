@@ -10,10 +10,14 @@ import '../models/message_model.dart';
 import '../models/group_model.dart';
 import '../models/group_message_model.dart';
 import '../models/invite_model.dart';
+import '../models/detection_access_model.dart';
+import '../models/audit_log_model.dart';
+import 'audit_service.dart';
 
 class DatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final AuditService _auditService = AuditService();
   final Random _random = Random.secure();
   final Map<String, Stream<UserModel?>> _userStreamCache = {};
 
@@ -25,9 +29,114 @@ class DatabaseService {
     ).join();
   }
 
+  DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+    return null;
+  }
+
+  void _recordAudit({
+    required String action,
+    required String entityType,
+    String? entityId,
+    String severity = AuditSeverity.info,
+    String? description,
+    String? targetUserId,
+    Map<String, dynamic>? metadata,
+    String? actorId,
+    String? actorEmail,
+    String? actorName,
+  }) {
+    unawaited(
+      _auditService.logAction(
+        action: action,
+        entityType: entityType,
+        entityId: entityId,
+        severity: severity,
+        description: description,
+        targetUserId: targetUserId,
+        metadata: metadata,
+        actorIdOverride: actorId,
+        actorEmailOverride: actorEmail,
+        actorNameOverride: actorName,
+      ),
+    );
+  }
+
+  Future<bool> _hasSharedDetectionInvite(String? email) async {
+    if (email == null || email.trim().isEmpty) return false;
+    final normalized = email.trim().toLowerCase();
+
+    final snapshot = await _firestore
+        .collection('invites')
+        .where('email', isEqualTo: normalized)
+        .where('shareDetections', isEqualTo: true)
+        .limit(5)
+        .get();
+
+    final now = DateTime.now();
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final status = (data['status'] ?? 'pending') as String;
+      if (status == 'revoked') continue;
+      final expiresAt = _parseDateTime(data['expiresAt']);
+      if (expiresAt != null && expiresAt.isBefore(now)) continue;
+      return true;
+    }
+    return false;
+  }
+
+  Future<DetectionAccessModel?> _getDetectionAccess(String userId) async {
+    final doc = await _firestore
+        .collection('detection_access')
+        .doc(userId)
+        .get();
+    if (!doc.exists) return null;
+    return DetectionAccessModel.fromMap(doc.data()!);
+  }
+
+  bool _isDetectionTypeAllowed(String type, List<String>? allowedTypes) {
+    if (allowedTypes == null ||
+        allowedTypes.isEmpty ||
+        allowedTypes.contains('all')) {
+      return true;
+    }
+
+    final normalizedType = type.toLowerCase();
+    for (final allowed in allowedTypes) {
+      if (normalizedType.contains(allowed)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // User operations
   Future<void> createUser(UserModel user) async {
     await _firestore.collection('users').doc(user.uid).set(user.toMap());
+    _recordAudit(
+      action: 'user.create',
+      entityType: 'user',
+      entityId: user.uid,
+      severity: AuditSeverity.info,
+      description: 'Created user ${user.email}',
+      targetUserId: user.uid,
+      metadata: {
+        'email': user.email,
+        'displayName': user.displayName,
+        'isAdmin': user.isAdmin,
+      },
+      actorId: user.uid,
+      actorEmail: user.email,
+      actorName: user.displayName,
+    );
   }
 
   Future<UserModel?> getUser(String uid) async {
@@ -40,6 +149,15 @@ class DatabaseService {
 
   Future<void> updateUser(String uid, Map<String, dynamic> data) async {
     await _firestore.collection('users').doc(uid).update(data);
+    _recordAudit(
+      action: 'user.update',
+      entityType: 'user',
+      entityId: uid,
+      severity: AuditSeverity.info,
+      description: 'Updated profile fields for $uid',
+      targetUserId: uid,
+      metadata: {'updatedFields': data.keys.toList()},
+    );
   }
 
   Future<void> updateUserPresence({required bool isOnline, String? uid}) async {
@@ -99,6 +217,15 @@ class DatabaseService {
       'status': 'pending',
       'createdAt': DateTime.now().toIso8601String(),
     });
+    _recordAudit(
+      action: 'friends.request_sent',
+      entityType: 'friend_request',
+      entityId: requestId,
+      severity: AuditSeverity.info,
+      description: 'Sent friend request to $friendId',
+      targetUserId: friendId,
+      metadata: {'requestId': requestId, 'friendId': friendId},
+    );
   }
 
   Future<void> acceptFriendRequest(String requestId) async {
@@ -106,10 +233,36 @@ class DatabaseService {
       'status': 'accepted',
       'updatedAt': DateTime.now().toIso8601String(),
     });
+    final ids = requestId.split('-');
+    _recordAudit(
+      action: 'friends.request_accepted',
+      entityType: 'friend_request',
+      entityId: requestId,
+      severity: AuditSeverity.info,
+      description: 'Accepted friend request $requestId',
+      targetUserId: ids.length > 1 ? ids[1] : null,
+      metadata: {
+        'requestId': requestId,
+        'initiatorId': ids.isNotEmpty ? ids.first : null,
+        'receiverId': ids.length > 1 ? ids[1] : null,
+      },
+    );
   }
 
   Future<void> rejectFriendRequest(String requestId) async {
-    await _firestore.collection('friends').doc(requestId).delete();
+    final docRef = _firestore.collection('friends').doc(requestId);
+    final snapshot = await docRef.get();
+    final data = snapshot.data();
+    await docRef.delete();
+    _recordAudit(
+      action: 'friends.request_rejected',
+      entityType: 'friend_request',
+      entityId: requestId,
+      severity: AuditSeverity.warning,
+      description: 'Rejected friend request $requestId',
+      targetUserId: data?['userId'] ?? data?['friendId'],
+      metadata: data,
+    );
   }
 
   Future<void> unfriend(String userId, String friendId) async {
@@ -120,6 +273,16 @@ class DatabaseService {
     // Delete both possible friendship documents
     await _firestore.collection('friends').doc(requestId1).delete();
     await _firestore.collection('friends').doc(requestId2).delete();
+    _recordAudit(
+      action: 'friends.unfriend',
+      entityType: 'friendship',
+      entityId: '$userId:$friendId',
+      severity: AuditSeverity.warning,
+      description: 'Removed friendship between $userId and $friendId',
+      metadata: {
+        'requestIds': [requestId1, requestId2],
+      },
+    );
   }
 
   Future<void> connectWithUser(String friendId) async {
@@ -132,31 +295,47 @@ class DatabaseService {
     final timestamp = DateTime.now().toIso8601String();
 
     final reverseDoc = await friendsCollection.doc(reverseId).get();
+    String outcome = 'created';
+    String? recordedRequestId;
+
     if (reverseDoc.exists) {
       await friendsCollection.doc(reverseId).update({
         'status': 'accepted',
         'updatedAt': timestamp,
       });
-      return;
+      outcome = 'accepted_reverse';
+      recordedRequestId = reverseId;
+    } else {
+      final directDoc = await friendsCollection.doc(directId).get();
+      if (directDoc.exists) {
+        await friendsCollection.doc(directId).update({
+          'status': 'accepted',
+          'updatedAt': timestamp,
+        });
+        outcome = 'accepted_direct';
+        recordedRequestId = directId;
+      } else {
+        await friendsCollection.doc(directId).set({
+          'id': directId,
+          'userId': currentUserId,
+          'friendId': friendId,
+          'status': 'accepted',
+          'createdAt': timestamp,
+          'updatedAt': timestamp,
+        });
+        recordedRequestId = directId;
+      }
     }
 
-    final directDoc = await friendsCollection.doc(directId).get();
-    if (directDoc.exists) {
-      await friendsCollection.doc(directId).update({
-        'status': 'accepted',
-        'updatedAt': timestamp,
-      });
-      return;
-    }
-
-    await friendsCollection.doc(directId).set({
-      'id': directId,
-      'userId': currentUserId,
-      'friendId': friendId,
-      'status': 'accepted',
-      'createdAt': timestamp,
-      'updatedAt': timestamp,
-    });
+    _recordAudit(
+      action: 'friends.connect',
+      entityType: 'friendship',
+      entityId: recordedRequestId,
+      severity: AuditSeverity.info,
+      description: 'Connected $currentUserId with $friendId via $outcome',
+      targetUserId: friendId,
+      metadata: {'requestId': recordedRequestId, 'outcome': outcome},
+    );
   }
 
   Stream<List<String>> getFriends(String userId) {
@@ -211,6 +390,15 @@ class DatabaseService {
         .collection('announcements')
         .doc(announcement.id)
         .set(announcement.toMap());
+    _recordAudit(
+      action: 'announcement.create',
+      entityType: 'announcement',
+      entityId: announcement.id,
+      severity: AuditSeverity.info,
+      description: 'Published announcement "${announcement.title}"',
+      targetUserId: announcement.userId,
+      metadata: {'title': announcement.title, 'author': announcement.userName},
+    );
   }
 
   Stream<List<AnnouncementModel>> getAnnouncementsForUser(String userId) {
@@ -248,6 +436,18 @@ class DatabaseService {
         .collection('detections')
         .doc(detection.id)
         .set(detection.toMap());
+    _recordAudit(
+      action: 'detection.create',
+      entityType: 'detection',
+      entityId: detection.id,
+      severity: AuditSeverity.info,
+      description: 'Recorded ${detection.type} detection',
+      targetUserId: detection.userId,
+      metadata: {
+        'type': detection.type,
+        'hasImage': detection.imageUrl != null,
+      },
+    );
   }
 
   Stream<List<DetectionModel>> getDetectionsForUser(String userId) async* {
@@ -273,10 +473,25 @@ class DatabaseService {
 
       if (adminSnapshot.docs.isNotEmpty) {
         final adminId = adminSnapshot.docs.first.id;
-        final isFriend = await areFriends(userId, adminId);
+        List<String>? allowedTypes;
+        bool hasAccess = await areFriends(userId, adminId);
 
-        if (isFriend) {
-          // Friends of admin see admin's detections
+        if (hasAccess) {
+          allowedTypes = null;
+        } else if (await _hasSharedDetectionInvite(user?.email)) {
+          hasAccess = true;
+          allowedTypes = null;
+        } else {
+          final manualAccess = await _getDetectionAccess(userId);
+          if (manualAccess?.canAccess == true) {
+            hasAccess = true;
+            allowedTypes = manualAccess?.allowedTypes;
+          }
+        }
+
+        if (hasAccess) {
+          final selectedTypes = allowedTypes;
+          // Authorized users see admin detections (optionally filtered)
           yield* _firestore
               .collection('detections')
               .where('userId', isEqualTo: adminId)
@@ -285,6 +500,12 @@ class DatabaseService {
               .map(
                 (snapshot) => snapshot.docs
                     .map((doc) => DetectionModel.fromMap(doc.data()))
+                    .where(
+                      (detection) => _isDetectionTypeAllowed(
+                        detection.type.toLowerCase(),
+                        selectedTypes,
+                      ),
+                    )
                     .toList(),
               );
         }
@@ -304,16 +525,86 @@ class DatabaseService {
         );
   }
 
+  // Detection access operations
+  Stream<List<DetectionAccessModel>> getDetectionAccessList() {
+    return _firestore
+        .collection('detection_access')
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => DetectionAccessModel.fromMap(doc.data()))
+              .toList(),
+        );
+  }
+
+  Future<void> setDetectionAccess({
+    required String userId,
+    required bool enabled,
+    List<String>? allowedTypes,
+  }) async {
+    final docRef = _firestore.collection('detection_access').doc(userId);
+    final now = DateTime.now();
+    final normalizedTypes = (allowedTypes ?? ['all'])
+        .map((type) => type.toLowerCase())
+        .toSet()
+        .toList();
+
+    await docRef.set({
+      'userId': userId,
+      'canAccess': enabled,
+      'allowedTypes': enabled ? normalizedTypes : <String>[],
+      'grantedBy': _auth.currentUser?.uid ?? 'admin',
+      'grantedAt': enabled ? now.toIso8601String() : null,
+      'updatedAt': now.toIso8601String(),
+    }, SetOptions(merge: true));
+
+    _recordAudit(
+      action: enabled ? 'detection_access.grant' : 'detection_access.revoke',
+      entityType: 'detection_access',
+      entityId: userId,
+      severity: enabled ? AuditSeverity.info : AuditSeverity.warning,
+      description: enabled
+          ? 'Granted detection access to $userId'
+          : 'Revoked detection access from $userId',
+      targetUserId: userId,
+      metadata: {'allowedTypes': enabled ? normalizedTypes : []},
+    );
+  }
+
   // Message operations
   Future<void> sendMessage(MessageModel message) async {
     await _firestore
         .collection('messages')
         .doc(message.id)
         .set(message.toMap());
+    _recordAudit(
+      action: 'messages.send',
+      entityType: 'message',
+      entityId: message.id,
+      severity: AuditSeverity.info,
+      description: 'Sent message to ${message.receiverId}',
+      targetUserId: message.receiverId,
+      metadata: {
+        'senderId': message.senderId,
+        'receiverId': message.receiverId,
+      },
+    );
   }
 
   Future<void> deleteMessage(String messageId) async {
-    await _firestore.collection('messages').doc(messageId).delete();
+    final docRef = _firestore.collection('messages').doc(messageId);
+    final snapshot = await docRef.get();
+    final data = snapshot.data();
+    await docRef.delete();
+    _recordAudit(
+      action: 'messages.delete',
+      entityType: 'message',
+      entityId: messageId,
+      severity: AuditSeverity.warning,
+      description: 'Deleted message $messageId',
+      metadata: data,
+      targetUserId: data?['receiverId'],
+    );
   }
 
   Stream<List<MessageModel>> getMessages(String userId, String otherUserId) {
@@ -470,6 +761,15 @@ class DatabaseService {
   // Group Management Methods
   Future<void> createGroup(GroupModel group) async {
     await _firestore.collection('groups').doc(group.id).set(group.toMap());
+    _recordAudit(
+      action: 'group.create',
+      entityType: 'group',
+      entityId: group.id,
+      severity: AuditSeverity.info,
+      description: 'Created group "${group.name}"',
+      targetUserId: group.creatorId,
+      metadata: {'name': group.name, 'memberCount': group.memberIds.length},
+    );
   }
 
   Stream<List<GroupModel>> getUserGroups(String userId) {
@@ -493,7 +793,16 @@ class DatabaseService {
     if (name != null) updates['name'] = name;
     if (description != null) updates['description'] = description;
 
+    if (updates.isEmpty) return;
     await _firestore.collection('groups').doc(groupId).update(updates);
+    _recordAudit(
+      action: 'group.update',
+      entityType: 'group',
+      entityId: groupId,
+      severity: AuditSeverity.info,
+      description: 'Updated group $groupId',
+      metadata: updates,
+    );
   }
 
   Future<void> removeGroupMember(String groupId, String memberId) async {
@@ -501,18 +810,42 @@ class DatabaseService {
       'memberIds': FieldValue.arrayRemove([memberId]),
       'adminIds': FieldValue.arrayRemove([memberId]),
     });
+    _recordAudit(
+      action: 'group.member_removed',
+      entityType: 'group',
+      entityId: groupId,
+      severity: AuditSeverity.warning,
+      description: 'Removed member $memberId from group $groupId',
+      targetUserId: memberId,
+    );
   }
 
   Future<void> addGroupAdmin(String groupId, String adminId) async {
     await _firestore.collection('groups').doc(groupId).update({
       'adminIds': FieldValue.arrayUnion([adminId]),
     });
+    _recordAudit(
+      action: 'group.admin_added',
+      entityType: 'group',
+      entityId: groupId,
+      severity: AuditSeverity.info,
+      description: 'Granted admin to $adminId',
+      targetUserId: adminId,
+    );
   }
 
   Future<void> removeGroupAdmin(String groupId, String adminId) async {
     await _firestore.collection('groups').doc(groupId).update({
       'adminIds': FieldValue.arrayRemove([adminId]),
     });
+    _recordAudit(
+      action: 'group.admin_removed',
+      entityType: 'group',
+      entityId: groupId,
+      severity: AuditSeverity.warning,
+      description: 'Revoked admin from $adminId',
+      targetUserId: adminId,
+    );
   }
 
   // Add members to a group
@@ -521,10 +854,19 @@ class DatabaseService {
     await _firestore.collection('groups').doc(groupId).update({
       'memberIds': FieldValue.arrayUnion(memberIds),
     });
+    _recordAudit(
+      action: 'group.members_added',
+      entityType: 'group',
+      entityId: groupId,
+      severity: AuditSeverity.info,
+      description: 'Added ${memberIds.length} member(s) to $groupId',
+      metadata: {'members': memberIds},
+    );
   }
 
   Future<void> deleteGroup(String groupId) async {
     final groupRef = _firestore.collection('groups').doc(groupId);
+    final groupSnapshot = await groupRef.get();
 
     final messagesSnapshot = await _firestore
         .collection('group_messages')
@@ -536,6 +878,17 @@ class DatabaseService {
     }
 
     await groupRef.delete();
+    _recordAudit(
+      action: 'group.delete',
+      entityType: 'group',
+      entityId: groupId,
+      severity: AuditSeverity.critical,
+      description: 'Deleted group $groupId',
+      metadata: {
+        'deletedMessages': messagesSnapshot.docs.length,
+        'group': groupSnapshot.data(),
+      },
+    );
   }
 
   // Group Message Methods
@@ -544,26 +897,45 @@ class DatabaseService {
         .collection('group_messages')
         .doc(message.id)
         .set(message.toMap());
+    _recordAudit(
+      action: 'group.message_send',
+      entityType: 'group_message',
+      entityId: message.id,
+      severity: AuditSeverity.info,
+      description: 'Sent group message in ${message.groupId}',
+      metadata: {'groupId': message.groupId, 'senderId': message.senderId},
+    );
   }
 
   Future<void> deleteGroupMessage(String messageId) async {
-    final docRef = _firestore.collection('group_messages').doc(messageId);
+    final collection = _firestore.collection('group_messages');
+    final docRef = collection.doc(messageId);
     final doc = await docRef.get();
+    Map<String, dynamic>? deletedData;
 
     if (doc.exists) {
+      deletedData = doc.data();
       await docRef.delete();
-      return;
+    } else {
+      final query = await collection
+          .where('id', isEqualTo: messageId)
+          .limit(1)
+          .get();
+
+      for (final docSnapshot in query.docs) {
+        deletedData = docSnapshot.data();
+        await docSnapshot.reference.delete();
+      }
     }
 
-    final query = await _firestore
-        .collection('group_messages')
-        .where('id', isEqualTo: messageId)
-        .limit(1)
-        .get();
-
-    for (final docSnapshot in query.docs) {
-      await docSnapshot.reference.delete();
-    }
+    _recordAudit(
+      action: 'group.message_delete',
+      entityType: 'group_message',
+      entityId: messageId,
+      severity: AuditSeverity.warning,
+      description: 'Deleted group message $messageId',
+      metadata: deletedData,
+    );
   }
 
   Stream<List<GroupMessageModel>> getGroupMessages(String groupId) {
@@ -585,6 +957,7 @@ class DatabaseService {
     String email, {
     String? message,
     Duration validity = const Duration(days: 7),
+    bool shareDetections = false,
   }) async {
     final trimmedEmail = email.trim().toLowerCase();
     final docRef = _firestore.collection('invites').doc();
@@ -598,9 +971,23 @@ class DatabaseService {
       createdAt: now,
       expiresAt: now.add(validity),
       message: message,
+      shareDetections: shareDetections,
     );
 
     await docRef.set(invite.toMap());
+    _recordAudit(
+      action: 'invite.create',
+      entityType: 'invite',
+      entityId: invite.id,
+      severity: AuditSeverity.info,
+      description: 'Created invite for $trimmedEmail',
+      metadata: {
+        'email': trimmedEmail,
+        'code': invite.code,
+        'expiresAt': invite.expiresAt.toIso8601String(),
+        'shareDetections': shareDetections,
+      },
+    );
     return invite;
   }
 
@@ -620,10 +1007,29 @@ class DatabaseService {
   }
 
   Future<void> updateInviteStatus(String inviteId, String status) async {
-    await _firestore.collection('invites').doc(inviteId).update({
+    final docRef = _firestore.collection('invites').doc(inviteId);
+    final snapshot = await docRef.get();
+    final previous = snapshot.data();
+    await docRef.update({
       'status': status,
       'updatedAt': DateTime.now().toIso8601String(),
     });
+    final lowered = status.toLowerCase();
+    final severity = (lowered == 'expired' || lowered == 'revoked')
+        ? AuditSeverity.warning
+        : AuditSeverity.info;
+    _recordAudit(
+      action: 'invite.status_update',
+      entityType: 'invite',
+      entityId: inviteId,
+      severity: severity,
+      description: 'Invite $inviteId marked as $status',
+      metadata: {
+        'email': previous?['email'],
+        'previousStatus': previous?['status'],
+        'newStatus': status,
+      },
+    );
   }
 
   // ===== END INVITE METHODS =====

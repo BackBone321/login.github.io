@@ -183,13 +183,21 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
                       final friendId = snapshot.data![index];
-                      return FutureBuilder<UserModel?>(
-                        future: _dbService.getUser(friendId),
+                      return StreamBuilder<UserModel?>(
+                        stream: _dbService.getUserStream(friendId),
                         builder: (context, userSnapshot) {
-                          if (!userSnapshot.hasData) {
-                            return SizedBox.shrink();
+                          if (userSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: _buildFriendSkeleton(),
+                            );
                           }
-                          return _buildFriendCard(userSnapshot.data!);
+                          final user = userSnapshot.data;
+                          if (user == null) {
+                            return const SizedBox.shrink();
+                          }
+                          return _buildFriendCard(user);
                         },
                       );
                     },
@@ -329,7 +337,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user.displayName ?? user.email ?? 'Unknown User',
+                        user.displayName ?? user.email,
                         style: TextStyle(
                           fontSize: 19,
                           fontWeight: FontWeight.bold,
@@ -348,7 +356,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              user.email!,
+                              user.email,
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 13,
@@ -985,7 +993,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user.displayName ?? user.email ?? 'Unknown User',
+                  user.displayName ?? user.email,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: primaryGreen,
@@ -1004,7 +1012,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        user.email ?? 'No email',
+                        user.email,
                         style: TextStyle(color: Colors.grey[600], fontSize: 13),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1181,7 +1189,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user.displayName ?? user.email ?? 'Unknown User',
+                  user.displayName ?? user.email,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: primaryGreen,
@@ -1298,6 +1306,54 @@ class _FriendsScreenState extends State<FriendsScreen> {
     }
   }
 
+  Widget _buildFriendSkeleton() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 16,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 12,
+                  width: 140,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showUserProfile(UserModel user) {
     final primaryGreen = Color(0xFF2E7D32);
 
@@ -1305,7 +1361,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          user.displayName ?? user.email ?? 'Profile',
+          user.displayName ?? user.email,
           style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold),
         ),
         content: Column(

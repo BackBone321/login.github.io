@@ -1870,7 +1870,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          content: Container(
+          content: SizedBox(
             width: double.maxFinite,
             height: 400,
             child: StreamBuilder<List<String>>(

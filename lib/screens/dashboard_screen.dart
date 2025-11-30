@@ -29,6 +29,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   WeatherModel? _currentWeather;
   StreamSubscription<WeatherModel>? _weatherSubscription;
   String? _userId;
+  final List<DetectionModel> _cachedDetections = [];
+  StreamSubscription<List<DetectionModel>>? _detectionSubscription;
+  bool _detectionsLoading = true;
   final Widget _friendsScreen = const FriendsScreen();
   final Widget _messagesScreen = const EnhancedMessagesScreen();
   final Widget _profileScreen = const ProfileScreen();
@@ -37,6 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   void initState() {
     super.initState();
     _userId = _auth.currentUser?.uid;
+    _listenToDetections();
     WidgetsBinding.instance.addObserver(this);
     _weatherService.startWeatherMonitoring();
     _weatherSubscription = _weatherService.weatherStream.listen((weather) {
@@ -53,6 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     WidgetsBinding.instance.removeObserver(this);
     _weatherSubscription?.cancel();
     _weatherService.stopWeatherMonitoring();
+    _detectionSubscription?.cancel();
     _updatePresence(false);
     super.dispose();
   }
@@ -71,6 +76,39 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _updatePresence(bool isOnline) async {
     if (_userId == null) return;
     await _dbService.updateUserPresence(isOnline: isOnline, uid: _userId);
+  }
+
+  void _listenToDetections() {
+    _detectionSubscription?.cancel();
+    if (_userId == null) {
+      setState(() {
+        _cachedDetections.clear();
+        _detectionsLoading = false;
+      });
+      return;
+    }
+
+    _detectionsLoading = true;
+    _detectionSubscription = _dbService
+        .getDetectionsForUser(_userId!)
+        .listen(
+          (detections) {
+            if (!mounted) return;
+            setState(() {
+              _cachedDetections
+                ..clear()
+                ..addAll(detections);
+              _detectionsLoading = false;
+            });
+          },
+          onError: (_) {
+            if (!mounted) return;
+            setState(() {
+              _cachedDetections.clear();
+              _detectionsLoading = false;
+            });
+          },
+        );
   }
 
   @override
@@ -424,39 +462,34 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildDetectionsList() {
-    final user = _auth.currentUser;
-    if (user == null) return SizedBox.shrink();
-
-    return StreamBuilder<List<DetectionModel>>(
-      stream: _dbService.getDetectionsForUser(user.uid),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
-          );
-        }
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Color(0xFF2E7D32).withOpacity(0.1)),
-            ),
-            child: Center(
-              child: Text(
-                'No detections yet',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-            ),
-          );
-        }
-        return Column(
-          children: snapshot.data!.take(3).map((detection) {
-            return _buildDetectionCard(detection);
-          }).toList(),
-        );
-      },
+    if (_detectionsLoading) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
+        ),
+      );
+    }
+    if (_cachedDetections.isEmpty) {
+      return Container(
+        padding: EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Color(0xFF2E7D32).withOpacity(0.1)),
+        ),
+        child: Center(
+          child: Text(
+            'No detections yet',
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+        ),
+      );
+    }
+    return Column(
+      children: _cachedDetections.take(3).map((detection) {
+        return _buildDetectionCard(detection);
+      }).toList(),
     );
   }
 
@@ -649,9 +682,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   void _showDetectionCategory(String category) {
     final primaryGreen = Color(0xFF2E7D32);
-    final user = _auth.currentUser;
-
-    if (user == null) return;
+    if (_userId == null) return;
 
     showModalBottomSheet(
       context: context,
@@ -668,17 +699,25 @@ class _DashboardScreenState extends State<DashboardScreen>
           case 'animals':
             title = 'Animal Detections';
             icon = Icons.pets;
-            types = ['cow', 'mammal', 'mammals'];
+            types = [
+              'cow',
+              'cows',
+              'animal',
+              'animals',
+              'mammal',
+              'mammals',
+              'livestock',
+            ];
             break;
           case 'insects':
             title = 'Insect Detections';
             icon = Icons.bug_report;
-            types = ['insect', 'pest'];
+            types = ['insect', 'insects', 'pest', 'pests'];
             break;
           case 'plant_health':
             title = 'Plant Health Detections';
             icon = Icons.local_florist;
-            types = ['plant_health', 'health_plant'];
+            types = ['plant_health', 'health_plant', 'plant', 'plants'];
             break;
           default:
             title = 'Detections';
@@ -711,77 +750,72 @@ class _DashboardScreenState extends State<DashboardScreen>
 
               // Detections List
               Expanded(
-                child: StreamBuilder<List<DetectionModel>>(
-                  stream: _dbService.getDetectionsForUser(user.uid),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
+                child: _detectionsLoading
+                    ? Center(
                         child: CircularProgressIndicator(color: primaryGreen),
-                      );
-                    }
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              icon,
-                              size: 48,
-                              color: primaryGreen.withOpacity(0.3),
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'No detections found',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    final filteredDetections = snapshot.data!
-                        .where((detection) => types.contains(detection.type))
-                        .toList();
-
-                    if (filteredDetections.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              icon,
-                              size: 48,
-                              color: primaryGreen.withOpacity(0.3),
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'No $category detections',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return ListView.builder(
-                      itemCount: filteredDetections.length,
-                      itemBuilder: (context, index) {
-                        return _buildDetectionCard(filteredDetections[index]);
-                      },
-                    );
-                  },
-                ),
+                      )
+                    : _buildFilteredDetectionsList(
+                        icon: icon,
+                        category: category,
+                        types: types,
+                        primaryGreen: primaryGreen,
+                      ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFilteredDetectionsList({
+    required IconData icon,
+    required String category,
+    required List<String> types,
+    required Color primaryGreen,
+  }) {
+    if (_cachedDetections.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: primaryGreen.withOpacity(0.3)),
+            const SizedBox(height: 16),
+            Text(
+              'No detections found',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final normalizedTypes = types.map((type) => type.toLowerCase()).toList();
+    final filteredDetections = _cachedDetections.where((detection) {
+      final detectionType = detection.type.toLowerCase();
+      return normalizedTypes.any((type) => detectionType.contains(type));
+    }).toList();
+
+    if (filteredDetections.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: primaryGreen.withOpacity(0.3)),
+            const SizedBox(height: 16),
+            Text(
+              'No $category detections',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: filteredDetections.length,
+      itemBuilder: (context, index) =>
+          _buildDetectionCard(filteredDetections[index]),
     );
   }
 

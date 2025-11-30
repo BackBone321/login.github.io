@@ -7,6 +7,7 @@ class InviteModel {
   final DateTime createdAt;
   final DateTime expiresAt;
   final String? message;
+  final bool shareDetections;
 
   InviteModel({
     required this.id,
@@ -17,6 +18,7 @@ class InviteModel {
     required this.createdAt,
     required this.expiresAt,
     this.message,
+    this.shareDetections = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +31,7 @@ class InviteModel {
       'createdAt': createdAt.toIso8601String(),
       'expiresAt': expiresAt.toIso8601String(),
       'message': message,
+      'shareDetections': shareDetections,
     };
   }
 
@@ -46,9 +49,9 @@ class InviteModel {
           ? DateTime.parse(map['expiresAt'])
           : DateTime.now().add(const Duration(days: 7)),
       message: map['message'],
+      shareDetections: map['shareDetections'] ?? false,
     );
   }
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 }
-

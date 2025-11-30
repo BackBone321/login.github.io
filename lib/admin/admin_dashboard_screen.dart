@@ -7,6 +7,7 @@ import '../services/weather_service.dart';
 import '../models/weather_model.dart';
 import '../auth/login_screen.dart';
 import 'admin_animal_detection_screen.dart';
+import 'admin_audit_screen.dart';
 import 'admin_friends_screen.dart';
 import 'admin_messages_screen.dart';
 
@@ -115,6 +116,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFF2E7D32),
               ),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminAuditScreen()),
+                );
+              },
+              icon: const Icon(Icons.shield_outlined),
+              label: const Text('Audit trail'),
+              style: TextButton.styleFrom(foregroundColor: deepGreen),
             ),
             const SizedBox(width: 8),
             IconButton(
@@ -363,11 +375,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         }
 
         final detections = snapshot.data ?? [];
-        final insects = _countByTypes(detections, ['insect', 'pest']);
-        final animals = _countByTypes(detections, ['cow', 'mammal', 'mammals']);
+        final insects = _countByTypes(detections, [
+          'insect',
+          'insects',
+          'pest',
+          'pests',
+          'bug',
+          'bugs',
+        ]);
+        final animals = _countByTypes(detections, [
+          'cow',
+          'cows',
+          'animal',
+          'animals',
+          'mammal',
+          'mammals',
+          'livestock',
+        ]);
         final plant = _countByTypes(detections, [
           'plant_health',
           'health_plant',
+          'plant',
+          'plants',
+          'crop',
+          'crops',
         ]);
         final last24h = detections
             .where((d) => DateTime.now().difference(d.detectedAt).inHours < 24)
@@ -588,9 +619,31 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildCategoryView(['insect', 'pest']),
-                _buildCategoryView(['cow', 'mammal', 'mammals']),
-                _buildCategoryView(['plant_health', 'health_plant']),
+                _buildCategoryView([
+                  'insect',
+                  'insects',
+                  'pest',
+                  'pests',
+                  'bug',
+                  'bugs',
+                ]),
+                _buildCategoryView([
+                  'cow',
+                  'cows',
+                  'animal',
+                  'animals',
+                  'mammal',
+                  'mammals',
+                  'livestock',
+                ]),
+                _buildCategoryView([
+                  'plant_health',
+                  'health_plant',
+                  'plant',
+                  'plants',
+                  'crop',
+                  'crops',
+                ]),
               ],
             ),
           ),
@@ -600,9 +653,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 
   int _countByTypes(List<DetectionModel> detections, List<String> types) {
-    return detections
-        .where((detection) => types.contains(detection.type))
-        .length;
+    final normalizedTypes = types.map((t) => t.toLowerCase()).toList();
+    return detections.where((detection) {
+      final detectionType = detection.type.toLowerCase();
+      return normalizedTypes.any((type) => detectionType.contains(type));
+    }).length;
   }
 
   String _formatRelativeTime(DateTime? dateTime) {
@@ -623,6 +678,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator(color: primaryGreen));
         }
+        final normalizedTypes = types.map((t) => t.toLowerCase()).toList();
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
             child: Text(
@@ -632,9 +688,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           );
         }
 
-        final filtered = snapshot.data!
-            .where((d) => types.contains(d.type))
-            .toList();
+        final filtered = snapshot.data!.where((d) {
+          final detectionType = d.type.toLowerCase();
+          return normalizedTypes.any((type) => detectionType.contains(type));
+        }).toList();
 
         if (filtered.isEmpty) {
           return Center(
