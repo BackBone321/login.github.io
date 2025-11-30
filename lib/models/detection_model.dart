@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class DetectionModel {
   final String id;
   final String userId;
@@ -36,14 +38,36 @@ class DetectionModel {
       type: map['type'] ?? '',
       imageUrl: map['imageUrl'],
       description: map['description'],
-      detectedAt: map['detectedAt'] != null
-          ? DateTime.parse(map['detectedAt'])
-          : DateTime.now(),
-      data: map['data'],
+      detectedAt: _parseDetectedAt(map['detectedAt']),
+      data: _coerceToMap(map['data']),
     );
   }
+
+  static DateTime _parseDetectedAt(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is Timestamp) return value.toDate();
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
+  static Map<String, dynamic>? _coerceToMap(dynamic value) {
+    if (value == null) return null;
+    if (value is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(value);
+    }
+    if (value is Map) {
+      return value.map<String, dynamic>((key, dynamic val) {
+        return MapEntry(key.toString(), val);
+      });
+    }
+    return null;
+  }
 }
-
-
 
 

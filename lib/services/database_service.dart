@@ -439,7 +439,6 @@ class DatabaseService {
     final adminSnapshot = await _firestore
         .collection('users')
         .where('isAdmin', isEqualTo: true)
-        .limit(1)
         .get();
 
     if (adminSnapshot.docs.isEmpty) {
@@ -460,8 +459,10 @@ class DatabaseService {
       return;
     }
 
-    final adminId = adminSnapshot.docs.first.id;
+    final allAdminIds = adminSnapshot.docs.map((doc) => doc.id).toList();
+    final accessibleAdminIds = <String>{};
     bool hasAccess = false;
+    bool shareAllDetections = false;
     List<String>? allowedTypes;
 
     final manualAccess = await _getDetectionAccess(userId);
@@ -471,11 +472,31 @@ class DatabaseService {
         return;
       }
       hasAccess = true;
+      shareAllDetections = true;
       allowedTypes = manualAccess.allowedTypes;
-    } else {
-      hasAccess =
-          await areFriends(userId, adminId) ||
-          await _hasSharedDetectionInvite(user?.email);
+      final grantedBy = manualAccess.grantedBy.trim();
+      if (grantedBy.isNotEmpty) {
+        accessibleAdminIds.add(grantedBy);
+      }
+    }
+
+    if (!hasAccess) {
+      for (final adminDoc in adminSnapshot.docs) {
+        final adminId = adminDoc.id;
+        if (await areFriends(userId, adminId)) {
+          accessibleAdminIds.add(adminId);
+          hasAccess = true;
+        }
+      }
+    }
+
+    if (!hasAccess) {
+      final sharedInvite = await _hasSharedDetectionInvite(user?.email);
+      if (sharedInvite) {
+        hasAccess = true;
+        shareAllDetections = true;
+        accessibleAdminIds.addAll(allAdminIds);
+      }
     }
 
     if (!hasAccess) {
@@ -483,23 +504,15 @@ class DatabaseService {
       return;
     }
 
-    final selectedTypes = allowedTypes;
-    yield* _firestore
-        .collection('detections')
-        .where('userId', isEqualTo: adminId)
-        .orderBy('detectedAt', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => DetectionModel.fromMap(doc.data()))
-              .where(
-                (detection) => _isDetectionTypeAllowed(
-                  detection.type.toLowerCase(),
-                  selectedTypes,
-                ),
-              )
-              .toList(),
-        );
+    if (accessibleAdminIds.isEmpty) {
+      accessibleAdminIds.addAll(allAdminIds);
+    }
+
+    yield* _buildDetectionShareStream(
+      adminIds: accessibleAdminIds,
+      allowedTypes: allowedTypes,
+      filterByAdminIds: !shareAllDetections,
+    );
   }
 
   Stream<List<DetectionModel>> getAllDetections() {
@@ -512,6 +525,58 @@ class DatabaseService {
               .map((doc) => DetectionModel.fromMap(doc.data()))
               .toList(),
         );
+  }
+
+  Stream<List<DetectionModel>> _buildDetectionShareStream({
+    required Set<String> adminIds,
+    List<String>? allowedTypes,
+    bool filterByAdminIds = true,
+  }) {
+    if (filterByAdminIds && adminIds.isEmpty) {
+      return const Stream.empty();
+    }
+
+    if (filterByAdminIds && adminIds.length == 1) {
+      final adminId = adminIds.first;
+      return _firestore
+          .collection('detections')
+          .where('userId', isEqualTo: adminId)
+          .orderBy('detectedAt', descending: true)
+          .snapshots()
+          .map(
+            (snapshot) => snapshot.docs
+                .map((doc) => DetectionModel.fromMap(doc.data()))
+                .where(
+                  (detection) => _isDetectionTypeAllowed(
+                    detection.type.toLowerCase(),
+                    allowedTypes,
+                  ),
+                )
+                .toList(),
+          );
+    }
+
+    const maxRecentDetections = 200;
+    final query = _firestore
+        .collection('detections')
+        .orderBy('detectedAt', descending: true)
+        .limit(maxRecentDetections);
+
+    return query.snapshots().map(
+      (snapshot) => snapshot.docs
+          .map((doc) => DetectionModel.fromMap(doc.data()))
+          .where(
+            (detection) =>
+                !filterByAdminIds || adminIds.contains(detection.userId),
+          )
+          .where(
+            (detection) => _isDetectionTypeAllowed(
+              detection.type.toLowerCase(),
+              allowedTypes,
+            ),
+          )
+          .toList(),
+    );
   }
 
   // Detection access operations
