@@ -9,6 +9,7 @@ import '../models/weather_model.dart';
 import '../auth/login_screen.dart';
 import 'admin_animal_detection_screen.dart';
 import 'admin_audit_screen.dart';
+import 'admin_detection_access_screen.dart';
 import 'admin_friends_screen.dart';
 import 'admin_messages_screen.dart';
 import 'widgets/announcement_composer.dart';
@@ -91,6 +92,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               },
               icon: const Icon(Icons.pets_outlined),
               label: const Text('Animal module'),
+              style: TextButton.styleFrom(foregroundColor: deepGreen),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminDetectionAccessScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.manage_accounts_outlined),
+              label: const Text('Detection access'),
               style: TextButton.styleFrom(foregroundColor: deepGreen),
             ),
             TextButton.icon(
@@ -606,24 +620,43 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(16),
+              color: const Color(0xFFF6F7FB),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: accent, width: 1.4),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
-              labelColor: Colors.white,
-              unselectedLabelColor: deepGreen,
+              indicatorPadding: EdgeInsets.zero,
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: accent,
+              unselectedLabelColor: deepGreen.withOpacity(0.7),
               labelStyle: const TextStyle(fontWeight: FontWeight.w600),
               tabs: const [
-                Tab(icon: Icon(Icons.bug_report_outlined), text: 'Insects'),
-                Tab(icon: Icon(Icons.pets_outlined), text: 'Animals'),
                 Tab(
+                  height: 48,
+                  icon: Icon(Icons.pets_outlined),
+                  text: 'Animals',
+                ),
+                Tab(
+                  height: 48,
+                  icon: Icon(Icons.bug_report_outlined),
+                  text: 'Insects',
+                ),
+                Tab(
+                  height: 48,
                   icon: Icon(Icons.local_florist_outlined),
                   text: 'Plant health',
                 ),
@@ -637,14 +670,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               controller: _tabController,
               children: [
                 _buildCategoryView([
-                  'insect',
-                  'insects',
-                  'pest',
-                  'pests',
-                  'bug',
-                  'bugs',
-                ]),
-                _buildCategoryView([
                   'cow',
                   'cows',
                   'animal',
@@ -652,6 +677,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   'mammal',
                   'mammals',
                   'livestock',
+                ]),
+                _buildCategoryView([
+                  'insect',
+                  'insects',
+                  'pest',
+                  'pests',
+                  'bug',
+                  'bugs',
                 ]),
                 _buildCategoryView([
                   'plant_health',

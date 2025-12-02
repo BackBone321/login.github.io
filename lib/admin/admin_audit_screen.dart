@@ -15,6 +15,8 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
   final AuditService _auditService = AuditService();
   final TextEditingController _searchController = TextEditingController();
   String _selectedSeverity = 'all';
+  DateTimeRange? _dateRange;
+  bool _onlyAccountCreation = false;
 
   @override
   void dispose() {
@@ -42,12 +44,16 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
             icon: const Icon(Icons.clear_all),
             onPressed: () {
               if (_searchController.text.isEmpty &&
-                  _selectedSeverity == 'all') {
+                  _selectedSeverity == 'all' &&
+                  _dateRange == null &&
+                  !_onlyAccountCreation) {
                 return;
               }
               setState(() {
                 _searchController.clear();
                 _selectedSeverity = 'all';
+                _dateRange = null;
+                _onlyAccountCreation = false;
               });
             },
           ),
@@ -61,6 +67,8 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
             child: Column(
               children: [
                 _buildSeverityRow(deepGreen),
+                const SizedBox(height: 12),
+                _buildInlineFilters(deepGreen),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _searchController,
@@ -86,6 +94,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
                 limit: 200,
                 severity: _selectedSeverity == 'all' ? null : _selectedSeverity,
               ),
+              key: ValueKey(_selectedSeverity),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -148,10 +157,74 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
     );
   }
 
+  Widget _buildInlineFilters(Color accent) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (_dateRange != null)
+          InputChip(
+            avatar: const Icon(
+              Icons.calendar_month_outlined,
+              size: 18,
+              color: Colors.white,
+            ),
+            label: Text(_formatDateRange(_dateRange!)),
+            labelStyle: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+            backgroundColor: accent,
+            selected: true,
+            onPressed: _pickDateRange,
+            onDeleted: () => setState(() => _dateRange = null),
+            deleteIcon: const Icon(Icons.close, size: 18),
+            deleteIconColor: Colors.white,
+          ),
+        FilterChip(
+          avatar: Icon(
+            Icons.badge_outlined,
+            size: 18,
+            color: _onlyAccountCreation ? Colors.white : accent,
+          ),
+          label: const Text('Account creation'),
+          labelStyle: TextStyle(
+            color: _onlyAccountCreation ? Colors.white : accent,
+            fontWeight: FontWeight.w600,
+          ),
+          selected: _onlyAccountCreation,
+          onSelected: (value) => setState(() => _onlyAccountCreation = value),
+          selectedColor: accent,
+          backgroundColor: const Color(0xFFE8F5E9),
+          checkmarkColor: Colors.white,
+        ),
+      ],
+    );
+  }
+
   List<AuditLogModel> _applySearch(List<AuditLogModel> logs) {
     final term = _searchController.text.trim().toLowerCase();
-    if (term.isEmpty) return logs;
+    final startDate = _dateRange != null ? _startOfDay(_dateRange!.start) : null;
+    final endDate = _dateRange != null ? _endOfDay(_dateRange!.end) : null;
     return logs.where((log) {
+      // Filter by severity (client-side backup)
+      if (_selectedSeverity != 'all' && log.severity != _selectedSeverity) {
+        return false;
+      }
+      // Filter by account creation
+      if (_onlyAccountCreation && log.action != 'user.create') {
+        return false;
+      }
+      // Filter by date range
+      final logTimestamp = log.timestamp.toLocal();
+      if (startDate != null &&
+          endDate != null &&
+          (logTimestamp.isBefore(startDate) ||
+              logTimestamp.isAfter(endDate))) {
+        return false;
+      }
+      // Filter by search term
+      if (term.isEmpty) return true;
       final descriptionMatch = (log.description ?? '').toLowerCase().contains(
         term,
       );
@@ -341,5 +414,50 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
       return value.toString();
     }
     return value.toString();
+  }
+
+  Future<void> _pickDateRange() async {
+    final now = DateTime.now();
+    final initialRange = _dateRange ??
+        DateTimeRange(
+          start: now.subtract(const Duration(days: 7)),
+          end: now,
+        );
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 2, 1, 1),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      initialDateRange: initialRange,
+      saveText: 'Apply',
+    );
+    if (range != null) {
+      setState(() {
+        _dateRange = DateTimeRange(
+          start: _startOfDay(range.start),
+          end: _startOfDay(range.end),
+        );
+      });
+    }
+  }
+
+  String _formatDateRange(DateTimeRange range) {
+    final start = _formatDate(range.start);
+    final end = _formatDate(range.end);
+    return start == end ? start : '$start – $end';
+  }
+
+  String _formatDate(DateTime date) {
+    final local = date.toLocal();
+    return '${local.month}/${local.day}/${local.year}';
+  }
+
+  DateTime _startOfDay(DateTime date) {
+    final local = date.toLocal();
+    return DateTime(local.year, local.month, local.day);
+  }
+
+  DateTime _endOfDay(DateTime date) {
+    final local = date.toLocal();
+    return DateTime(local.year, local.month, local.day, 23, 59, 59, 999);
   }
 }
