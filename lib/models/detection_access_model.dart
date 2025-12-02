@@ -51,3 +51,10 @@ class DetectionAccessModel {
   }
 }
 
+
+
+
+
+
+
+

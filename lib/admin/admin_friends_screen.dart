@@ -106,10 +106,12 @@ class _AdminFriendsScreenState extends State<AdminFriendsScreen> {
                         ? Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(child: _buildFriendPanel(friendIds)),
+                              SizedBox(
+                                width: 340,
+                                child: _buildFriendPanel(friendIds),
+                              ),
                               const SizedBox(width: 24),
-                              Flexible(
-                                flex: 5,
+                              Expanded(
                                 child: _buildSearchPanel(friendIds),
                               ),
                             ],
@@ -652,12 +654,16 @@ class _AdminFriendsScreenState extends State<AdminFriendsScreen> {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
             ),
           ),
         ],

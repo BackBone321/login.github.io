@@ -374,7 +374,9 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 10),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
                     children: [
                       Chip(
                         label: Text(
@@ -390,7 +392,6 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                         padding: EdgeInsets.zero,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      const SizedBox(width: 8),
                       Chip(
                         label: Text(
                           group.createdAt.toLocal().toString().split(' ').first,
