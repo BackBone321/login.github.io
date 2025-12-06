@@ -64,106 +64,154 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
     final lightGreen = Color(0xFFE8F5E8);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 600;
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: primaryGreen),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Password Recovery',
-          style: TextStyle(
-            color: primaryGreen,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+      appBar: isWideScreen
+          ? null
+          : AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back, color: primaryGreen),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: Text(
+                'Password Recovery',
+                style: TextStyle(
+                  color: primaryGreen,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+      body: SafeArea(
+        child: isWideScreen
+            ? _buildWideScreenLayout(primaryGreen, lightGreen)
+            : _buildMobileLayout(primaryGreen, lightGreen),
+      ),
+    );
+  }
+
+  Widget _buildWideScreenLayout(Color primaryGreen, Color lightGreen) {
+    return Stack(
+      children: [
+        // Back button for wide screen
+        Positioned(
+          top: 20,
+          left: 20,
+          child: IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: primaryGreen.withOpacity(0.2)),
+              ),
+              child: Icon(Icons.arrow_back, color: primaryGreen),
+            ),
           ),
         ),
+        // Centered content
+        Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+            child: Container(
+              width: 420,
+              padding: EdgeInsets.all(40),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: _buildRecoveryForm(primaryGreen, lightGreen),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout(Color primaryGreen, Color lightGreen) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [_buildRecoveryForm(primaryGreen, lightGreen)],
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
+    );
+  }
+
+  Widget _buildRecoveryForm(Color primaryGreen, Color lightGreen) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Simple Logo Section
+        Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(color: lightGreen, shape: BoxShape.circle),
+          child: Icon(Icons.lock_reset_rounded, size: 60, color: primaryGreen),
+        ),
+        SizedBox(height: 32),
+
+        // Title
+        Text(
+          'Forgot Password?',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: primaryGreen,
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Enter your email and we\'ll send you a verification link to reset your password',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+        ),
+        SizedBox(height: 48),
+
+        // Recovery Form
+        Form(
+          key: _formKey,
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Simple Logo Section
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: lightGreen,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.lock_reset_rounded,
-                  size: 60,
-                  color: primaryGreen,
-                ),
+              CustomTextField(
+                controller: _emailController,
+                label: 'Email Address',
+                keyboardType: TextInputType.emailAddress,
+                validator: (val) => val!.isEmpty ? 'Email is required' : null,
+                icon: Icons.email,
               ),
               SizedBox(height: 32),
 
-              // Title
-              Text(
-                'Forgot Password?',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: primaryGreen,
-                ),
+              // Send Code Button
+              CustomButton(
+                text: 'Send Verification Email',
+                onPressed: _isLoading ? null : _sendResetEmail,
+                isLoading: _isLoading,
+                isPrimary: true,
               ),
-              SizedBox(height: 8),
-              Text(
-                'Enter your email and we\'ll send you a verification link to reset your password',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-              ),
-              SizedBox(height: 48),
+              SizedBox(height: 24),
 
-              // Recovery Form
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    CustomTextField(
-                      controller: _emailController,
-                      label: 'Email Address',
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (val) =>
-                          val!.isEmpty ? 'Email is required' : null,
-                      icon: Icons.email,
-                    ),
-                    SizedBox(height: 32),
-
-                    // Send Code Button
-                    CustomButton(
-                      text: 'Send Verification Email',
-                      onPressed: _isLoading ? null : _sendResetEmail,
-                      isLoading: _isLoading,
-                      isPrimary: true,
-                    ),
-                    SizedBox(height: 24),
-
-                    // Back to Login
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        'Back to Login',
-                        style: TextStyle(
-                          color: primaryGreen,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+              // Back to Login
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Back to Login',
+                  style: TextStyle(
+                    color: primaryGreen,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 

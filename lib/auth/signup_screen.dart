@@ -185,146 +185,198 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
     final lightGreen = Color(0xFFE8F5E8);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 600;
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: primaryGreen),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Create Account',
-          style: TextStyle(
-            color: primaryGreen,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+      appBar: isWideScreen
+          ? null
+          : AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back, color: primaryGreen),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: Text(
+                'Create Account',
+                style: TextStyle(
+                  color: primaryGreen,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+      body: SafeArea(
+        child: isWideScreen
+            ? _buildWideScreenLayout(primaryGreen, lightGreen)
+            : _buildMobileLayout(primaryGreen, lightGreen),
+      ),
+    );
+  }
+
+  Widget _buildWideScreenLayout(Color primaryGreen, Color lightGreen) {
+    return Stack(
+      children: [
+        // Back button for wide screen
+        Positioned(
+          top: 20,
+          left: 20,
+          child: IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: primaryGreen.withOpacity(0.2)),
+              ),
+              child: Icon(Icons.arrow_back, color: primaryGreen),
+            ),
           ),
         ),
+        // Centered content
+        Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+            child: Container(
+              width: 450,
+              padding: EdgeInsets.all(40),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: _buildSignupForm(primaryGreen, lightGreen),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout(Color primaryGreen, Color lightGreen) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          SizedBox(height: 20),
+          _buildSignupForm(primaryGreen, lightGreen),
+        ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24),
+    );
+  }
+
+  Widget _buildSignupForm(Color primaryGreen, Color lightGreen) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Simple Logo Section
+        Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(color: lightGreen, shape: BoxShape.circle),
+          child: Icon(Icons.eco, size: 60, color: primaryGreen),
+        ),
+        SizedBox(height: 32),
+
+        // Title
+        Text(
+          'Join Us',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: primaryGreen,
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Create your account to get started',
+          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+        ),
+        SizedBox(height: 48),
+
+        // Signup Form
+        Form(
+          key: _formKey,
           child: Column(
             children: [
-              SizedBox(height: 20),
+              CustomTextField(
+                controller: _nameController,
+                label: 'Full Name',
+                validator: (val) => val!.isEmpty ? 'Name is required' : null,
+                icon: Icons.person,
+              ),
+              SizedBox(height: 16),
+              CustomTextField(
+                controller: _emailController,
+                label: 'Email Address',
+                keyboardType: TextInputType.emailAddress,
+                validator: (val) => val!.isEmpty ? 'Email is required' : null,
+                icon: Icons.email,
+              ),
+              SizedBox(height: 16),
 
-              // Simple Logo Section
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: lightGreen,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.eco, size: 60, color: primaryGreen),
+              CustomTextField(
+                controller: _passwordController,
+                label: 'Password',
+                obscureText: true,
+                showPasswordToggle: true,
+                validator: (val) => val!.length < 6
+                    ? 'Password must be at least 6 characters'
+                    : null,
+                icon: Icons.lock,
+              ),
+              SizedBox(height: 16),
+              CustomTextField(
+                controller: _confirmPasswordController,
+                label: 'Confirm Password',
+                obscureText: true,
+                showPasswordToggle: true,
+                validator: (val) =>
+                    val!.isEmpty ? 'Please confirm your password' : null,
+                icon: Icons.lock,
               ),
               SizedBox(height: 32),
 
-              // Title
-              Text(
-                'Join Us',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: primaryGreen,
+              // Create Account Button
+              CustomButton(
+                text: 'Create Account',
+                onPressed: _isLoading ? null : _signup,
+                isLoading: _isLoading,
+                isPrimary: true,
+              ),
+              SizedBox(height: 24),
+
+              // Divider
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey[300])),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'or',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey[300])),
+                ],
+              ),
+              SizedBox(height: 24),
+
+              // Sign In Button
+              CustomButton(
+                text: 'Already have an account? Sign In',
+                onPressed: () => Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => LoginScreen()),
                 ),
+                isPrimary: false,
               ),
-              SizedBox(height: 8),
-              Text(
-                'Create your account to get started',
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-              ),
-              SizedBox(height: 48),
-
-              // Signup Form
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    CustomTextField(
-                      controller: _nameController,
-                      label: 'Full Name',
-                      validator: (val) =>
-                          val!.isEmpty ? 'Name is required' : null,
-                      icon: Icons.person,
-                    ),
-                    SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _emailController,
-                      label: 'Email Address',
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (val) =>
-                          val!.isEmpty ? 'Email is required' : null,
-                      icon: Icons.email,
-                    ),
-                    SizedBox(height: 16),
-
-                    CustomTextField(
-                      controller: _passwordController,
-                      label: 'Password',
-                      obscureText: true,
-                      showPasswordToggle: true,
-                      validator: (val) => val!.length < 6
-                          ? 'Password must be at least 6 characters'
-                          : null,
-                      icon: Icons.lock,
-                    ),
-                    SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _confirmPasswordController,
-                      label: 'Confirm Password',
-                      obscureText: true,
-                      showPasswordToggle: true,
-                      validator: (val) =>
-                          val!.isEmpty ? 'Please confirm your password' : null,
-                      icon: Icons.lock,
-                    ),
-                    SizedBox(height: 32),
-
-                    // Create Account Button
-                    CustomButton(
-                      text: 'Create Account',
-                      onPressed: _isLoading ? null : _signup,
-                      isLoading: _isLoading,
-                      isPrimary: true,
-                    ),
-                    SizedBox(height: 24),
-
-                    // Divider
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: Colors.grey[300])),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'or',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ),
-                        Expanded(child: Divider(color: Colors.grey[300])),
-                      ],
-                    ),
-                    SizedBox(height: 24),
-
-                    // Sign In Button
-                    CustomButton(
-                      text: 'Already have an account? Sign In',
-                      onPressed: () => Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => LoginScreen()),
-                      ),
-                      isPrimary: false,
-                    ),
-                    SizedBox(height: 32),
-                  ],
-                ),
-              ),
+              SizedBox(height: 32),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 

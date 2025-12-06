@@ -558,7 +558,10 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                       if (group.description.isNotEmpty)
                         Text(
                           group.description,
-                          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 12,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -889,7 +892,10 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                               decoration: BoxDecoration(
                                 color: skyBlue,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: skyBlue.withOpacity(0.4),
@@ -904,7 +910,9 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                               ),
                               child: Center(
                                 child: Text(
-                                  unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                  unreadCount > 99
+                                      ? '99+'
+                                      : unreadCount.toString(),
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -936,7 +944,9 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                               Text(
                                 online ? 'Online' : 'Offline',
                                 style: TextStyle(
-                                  color: online ? Colors.green : Colors.grey[500],
+                                  color: online
+                                      ? Colors.green
+                                      : Colors.grey[500],
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -956,7 +966,9 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                             conversation['lastMessage'] ?? '',
                             style: TextStyle(
                               color: Colors.grey[600],
-                              fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: unreadCount > 0
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1019,10 +1031,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
   }
 
   void _markMessagesAsRead() {
-    _dbService.markMessagesAsRead(
-      widget.otherUser.uid,
-      _auth.currentUser!.uid,
-    );
+    _dbService.markMessagesAsRead(widget.otherUser.uid, _auth.currentUser!.uid);
   }
 
   void _startPrivateVideoCall() {

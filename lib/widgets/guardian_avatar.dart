@@ -133,7 +133,3 @@ class GuardianAvatar extends StatelessWidget {
     );
   }
 }
-
-
-
-
