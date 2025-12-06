@@ -384,6 +384,52 @@ class DatabaseService {
     return false;
   }
 
+  /// Check if there's a pending friend request between two users
+  /// Returns: 'none', 'pending_sent', 'pending_received', or 'friends'
+  Future<String> getFriendshipStatus(String currentUserId, String otherUserId) async {
+    final sentRequestId = '$currentUserId-$otherUserId';
+    final receivedRequestId = '$otherUserId-$currentUserId';
+
+    final sentDoc = await _firestore.collection('friends').doc(sentRequestId).get();
+    final receivedDoc = await _firestore.collection('friends').doc(receivedRequestId).get();
+
+    // Check if already friends
+    if (sentDoc.exists && sentDoc.data()!['status'] == 'accepted') return 'friends';
+    if (receivedDoc.exists && receivedDoc.data()!['status'] == 'accepted') return 'friends';
+
+    // Check if current user sent a pending request
+    if (sentDoc.exists && sentDoc.data()!['status'] == 'pending') return 'pending_sent';
+
+    // Check if current user received a pending request
+    if (receivedDoc.exists && receivedDoc.data()!['status'] == 'pending') return 'pending_received';
+
+    return 'none';
+  }
+
+  /// Stream version to get real-time friendship status updates
+  Stream<String> getFriendshipStatusStream(String currentUserId, String otherUserId) {
+    final sentRequestId = '$currentUserId-$otherUserId';
+    final receivedRequestId = '$otherUserId-$currentUserId';
+
+    return _firestore.collection('friends').snapshots().map((snapshot) {
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final status = data['status'] as String?;
+
+        if (doc.id == sentRequestId) {
+          if (status == 'accepted') return 'friends';
+          if (status == 'pending') return 'pending_sent';
+        }
+
+        if (doc.id == receivedRequestId) {
+          if (status == 'accepted') return 'friends';
+          if (status == 'pending') return 'pending_received';
+        }
+      }
+      return 'none';
+    });
+  }
+
   // Announcement operations
   Future<void> createAnnouncement(AnnouncementModel announcement) async {
     await _firestore
@@ -1087,6 +1133,136 @@ class DatabaseService {
   }
 
   // ===== END INVITE METHODS =====
+
+  // ===== UNREAD MESSAGE METHODS =====
+
+  /// Stream to get count of unread direct messages for a user
+  Stream<int> getUnreadMessageCount(String userId) {
+    return _firestore
+        .collection('messages')
+        .where('receiverId', isEqualTo: userId)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  /// Stream to get count of unread group messages for a user
+  Stream<int> getUnreadGroupMessageCount(String userId) {
+    // First get user's groups, then count unread messages
+    return _firestore
+        .collection('groups')
+        .where('memberIds', arrayContains: userId)
+        .snapshots()
+        .asyncMap((groupsSnapshot) async {
+      if (groupsSnapshot.docs.isEmpty) return 0;
+
+      final groupIds = groupsSnapshot.docs.map((doc) => doc.id).toList();
+      int totalUnread = 0;
+
+      // Check each group for unread messages
+      for (final groupId in groupIds) {
+        final messagesSnapshot = await _firestore
+            .collection('group_messages')
+            .where('groupId', isEqualTo: groupId)
+            .where('senderId', isNotEqualTo: userId)
+            .get();
+
+        // Count messages that the user hasn't read
+        for (final doc in messagesSnapshot.docs) {
+          final data = doc.data();
+          final readBy = (data['readBy'] as List<dynamic>?) ?? [];
+          if (!readBy.contains(userId)) {
+            totalUnread++;
+          }
+        }
+      }
+
+      return totalUnread;
+    });
+  }
+
+  /// Mark a direct message as read
+  Future<void> markMessageAsRead(String messageId) async {
+    await _firestore.collection('messages').doc(messageId).update({
+      'isRead': true,
+    });
+  }
+
+  /// Mark all messages from a specific sender as read
+  Future<void> markMessagesAsRead(String senderId, String receiverId) async {
+    final snapshot = await _firestore
+        .collection('messages')
+        .where('senderId', isEqualTo: senderId)
+        .where('receiverId', isEqualTo: receiverId)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    for (final doc in snapshot.docs) {
+      await doc.reference.update({'isRead': true});
+    }
+  }
+
+  /// Mark a group message as read by a user
+  Future<void> markGroupMessageAsRead(String messageId, String userId) async {
+    await _firestore.collection('group_messages').doc(messageId).update({
+      'readBy': FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  /// Mark all group messages as read for a user in a specific group
+  Future<void> markAllGroupMessagesAsRead(String groupId, String userId) async {
+    final snapshot = await _firestore
+        .collection('group_messages')
+        .where('groupId', isEqualTo: groupId)
+        .where('senderId', isNotEqualTo: userId)
+        .get();
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final readBy = (data['readBy'] as List<dynamic>?) ?? [];
+      if (!readBy.contains(userId)) {
+        await doc.reference.update({
+          'readBy': FieldValue.arrayUnion([userId]),
+        });
+      }
+    }
+  }
+
+  /// Stream to get unread count from a specific user (for conversation cards)
+  Stream<int> getUnreadCountFromUser(String senderId, String receiverId) {
+    return _firestore
+        .collection('messages')
+        .where('senderId', isEqualTo: senderId)
+        .where('receiverId', isEqualTo: receiverId)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  /// Stream to get unread group message count for a specific group
+  Stream<int> getUnreadGroupCountForGroup(String groupId, String userId) {
+    return _firestore
+        .collection('group_messages')
+        .where('groupId', isEqualTo: groupId)
+        .snapshots()
+        .map((snapshot) {
+      int unreadCount = 0;
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final senderId = data['senderId'] as String?;
+        // Don't count messages sent by the user themselves
+        if (senderId == userId) continue;
+
+        final readBy = (data['readBy'] as List<dynamic>?) ?? [];
+        if (!readBy.contains(userId)) {
+          unreadCount++;
+        }
+      }
+      return unreadCount;
+    });
+  }
+
+  // ===== END UNREAD MESSAGE METHODS =====
 
   // ===== END OF GROUP METHODS =====
 }

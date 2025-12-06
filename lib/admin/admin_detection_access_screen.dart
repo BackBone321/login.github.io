@@ -413,7 +413,7 @@ class _AdminDetectionAccessScreenState
                           onSelected: (value) {
                             setModalState(() {
                               if (option.id == 'all') {
-                                selection..clear();
+                                selection.clear();
                                 if (value) selection.add('all');
                               } else {
                                 if (value) {

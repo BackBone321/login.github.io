@@ -36,11 +36,18 @@ class _DashboardScreenState extends State<DashboardScreen>
   final Widget _messagesScreen = const EnhancedMessagesScreen();
   final Widget _profileScreen = const ProfileScreen();
 
+  // Notification badge counts
+  int _unreadDirectMessages = 0;
+  int _unreadGroupMessages = 0;
+  StreamSubscription<int>? _unreadDirectSubscription;
+  StreamSubscription<int>? _unreadGroupSubscription;
+
   @override
   void initState() {
     super.initState();
     _userId = _auth.currentUser?.uid;
     _listenToDetections();
+    _listenToUnreadMessages();
     WidgetsBinding.instance.addObserver(this);
     _weatherService.startWeatherMonitoring();
     _weatherSubscription = _weatherService.weatherStream.listen((weather) {
@@ -52,12 +59,36 @@ class _DashboardScreenState extends State<DashboardScreen>
     _updatePresence(true);
   }
 
+  void _listenToUnreadMessages() {
+    if (_userId == null) return;
+
+    // Listen to unread direct messages
+    _unreadDirectSubscription?.cancel();
+    _unreadDirectSubscription = _dbService.getUnreadMessageCount(_userId!).listen((count) {
+      if (!mounted) return;
+      setState(() {
+        _unreadDirectMessages = count;
+      });
+    });
+
+    // Listen to unread group messages
+    _unreadGroupSubscription?.cancel();
+    _unreadGroupSubscription = _dbService.getUnreadGroupMessageCount(_userId!).listen((count) {
+      if (!mounted) return;
+      setState(() {
+        _unreadGroupMessages = count;
+      });
+    });
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _weatherSubscription?.cancel();
     _weatherService.stopWeatherMonitoring();
     _detectionSubscription?.cancel();
+    _unreadDirectSubscription?.cancel();
+    _unreadGroupSubscription?.cancel();
     _updatePresence(false);
     super.dispose();
   }
@@ -161,6 +192,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   BottomNavigationBar _buildBottomNavigationBar(Color primaryGreen) {
+    final totalUnreadMessages = _unreadDirectMessages + _unreadGroupMessages;
+
     return BottomNavigationBar(
       currentIndex: _currentIndex,
       onTap: (index) {
@@ -190,8 +223,16 @@ class _DashboardScreenState extends State<DashboardScreen>
           label: 'Detections',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.message_outlined),
-          activeIcon: Icon(Icons.message),
+          icon: _buildIconWithBadge(
+            Icons.message_outlined,
+            totalUnreadMessages,
+            isActive: false,
+          ),
+          activeIcon: _buildIconWithBadge(
+            Icons.message,
+            totalUnreadMessages,
+            isActive: true,
+          ),
           label: 'Message',
         ),
         BottomNavigationBarItem(
@@ -199,6 +240,52 @@ class _DashboardScreenState extends State<DashboardScreen>
           activeIcon: Icon(Icons.person),
           label: 'Profile',
         ),
+      ],
+    );
+  }
+
+  /// Builds an icon with a sky blue notification badge
+  Widget _buildIconWithBadge(IconData icon, int count, {bool isActive = false}) {
+    const skyBlue = Color(0xFF87CEEB);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon),
+        if (count > 0)
+          Positioned(
+            top: -4,
+            right: -8,
+            child: Container(
+              padding: EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: skyBlue,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: skyBlue.withOpacity(0.4),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              constraints: BoxConstraints(
+                minWidth: 16,
+                minHeight: 16,
+              ),
+              child: Center(
+                child: Text(
+                  count > 99 ? '99+' : count.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

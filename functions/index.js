@@ -1,16 +1,183 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
+const oracledb = require('oracledb');
+require('dotenv').config();
 
 admin.initializeApp();
 
-const gmailEmail = functions.config().gmail?.email;
-const gmailPassword = functions.config().gmail?.password;
+// ============================================
+// ORACLE DATABASE CONFIGURATION
+// ============================================
+const oracleConfig = {
+  user: process.env.ORACLE_USER,
+  password: process.env.ORACLE_PASSWORD,
+  connectString: process.env.ORACLE_CONNECTION_STRING,
+  // For Oracle Cloud Autonomous DB, set wallet location:
+  // configDir: process.env.ORACLE_WALLET_DIR,
+};
+
+// Check if Oracle is configured
+const isOracleConfigured = () => {
+  return oracleConfig.user && oracleConfig.password && oracleConfig.connectString;
+};
+
+// Initialize Oracle client (for thick mode with Instant Client)
+// Uncomment if using Oracle Instant Client:
+// try {
+//   oracledb.initOracleClient({ libDir: process.env.ORACLE_CLIENT_DIR });
+// } catch (err) {
+//   console.error('Oracle Client initialization failed:', err);
+// }
+
+/**
+ * Sync audit log to Oracle Database
+ * Triggered automatically when a new audit log is created in Firestore
+ */
+async function syncAuditToOracle(auditLog) {
+  if (!isOracleConfigured()) {
+    console.warn('Oracle not configured. Skipping sync for audit log:', auditLog.id);
+    return { success: false, reason: 'Oracle not configured' };
+  }
+
+  let connection;
+  try {
+    connection = await oracledb.getConnection(oracleConfig);
+
+    const result = await connection.execute(
+      `INSERT INTO AUDIT_LOGS (
+        ID, ACTION, ENTITY_TYPE, ENTITY_ID, SEVERITY,
+        ACTOR_ID, ACTOR_EMAIL, ACTOR_NAME, TARGET_USER_ID,
+        DESCRIPTION, TIMESTAMP, METADATA, SYNCED_AT
+      ) VALUES (
+        :id, :action, :entityType, :entityId, :severity,
+        :actorId, :actorEmail, :actorName, :targetUserId,
+        :description, TO_TIMESTAMP(:timestamp, 'YYYY-MM-DD"T"HH24:MI:SS.FF3"Z"'),
+        :metadata, CURRENT_TIMESTAMP
+      )`,
+      {
+        id: auditLog.id || null,
+        action: auditLog.action || null,
+        entityType: auditLog.entityType || null,
+        entityId: auditLog.entityId || null,
+        severity: auditLog.severity || 'info',
+        actorId: auditLog.actorId || null,
+        actorEmail: auditLog.actorEmail || null,
+        actorName: auditLog.actorName || null,
+        targetUserId: auditLog.targetUserId || null,
+        description: auditLog.description || null,
+        timestamp: auditLog.timestamp || new Date().toISOString(),
+        metadata: auditLog.metadata ? JSON.stringify(auditLog.metadata) : null,
+      },
+      { autoCommit: true }
+    );
+
+    console.log(`✅ Audit log synced to Oracle: ${auditLog.id}`);
+    return { success: true, rowsAffected: result.rowsAffected };
+  } catch (error) {
+    console.error('❌ Oracle sync error:', error.message);
+    return { success: false, error: error.message };
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error closing Oracle connection:', err);
+      }
+    }
+  }
+}
+
+/**
+ * Firestore Trigger: Sync new audit logs to Oracle
+ * Fires whenever a document is created in 'audit_logs' collection
+ */
+exports.syncAuditLogToOracle = functions
+  .region('us-central1')
+  .firestore.document('audit_logs/{logId}')
+  .onCreate(async (snapshot, context) => {
+    const auditLog = snapshot.data();
+    auditLog.id = context.params.logId;
+
+    console.log(`📝 New audit log detected: ${auditLog.id} - ${auditLog.action}`);
+
+    const result = await syncAuditToOracle(auditLog);
+
+    // Optionally mark as synced in Firestore
+    if (result.success) {
+      await snapshot.ref.update({
+        oracleSynced: true,
+        oracleSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } else {
+      await snapshot.ref.update({
+        oracleSynced: false,
+        oracleSyncError: result.error || result.reason,
+      });
+    }
+
+    return result;
+  });
+
+/**
+ * HTTP Callable: Manual sync of existing audit logs to Oracle
+ * Use this to backfill existing logs or retry failed syncs
+ */
+exports.manualSyncAuditLogs = functions
+  .region('us-central1')
+  .https.onCall(async (data, context) => {
+    // Optional: Require admin authentication
+    // if (!context.auth) {
+    //   throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+    // }
+
+    const { limit = 100, onlyFailed = false } = data;
+
+    let query = admin.firestore().collection('audit_logs');
+
+    if (onlyFailed) {
+      query = query.where('oracleSynced', '==', false);
+    } else {
+      query = query.where('oracleSynced', '==', null);
+    }
+
+    const snapshot = await query.limit(limit).get();
+
+    const results = {
+      total: snapshot.size,
+      synced: 0,
+      failed: 0,
+      errors: [],
+    };
+
+    for (const doc of snapshot.docs) {
+      const auditLog = doc.data();
+      auditLog.id = doc.id;
+
+      const result = await syncAuditToOracle(auditLog);
+
+      if (result.success) {
+        results.synced++;
+        await doc.ref.update({
+          oracleSynced: true,
+          oracleSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } else {
+        results.failed++;
+        results.errors.push({ id: doc.id, error: result.error || result.reason });
+      }
+    }
+
+    return results;
+  });
+
+// Use environment variables instead of deprecated functions.config()
+const gmailEmail = process.env.GMAIL_EMAIL;
+const gmailPassword = process.env.GMAIL_APP_PASSWORD;
 
 if (!gmailEmail || !gmailPassword) {
   console.warn(
-    'Gmail credentials are not configured. Run ' +
-      '"firebase functions:config:set gmail.email=\'you@gmail.com\' gmail.password=\'app-password\'"'
+    'Gmail credentials are not configured. Please set GMAIL_EMAIL and GMAIL_APP_PASSWORD in .env file'
   );
 }
 

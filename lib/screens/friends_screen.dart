@@ -482,642 +482,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   void _showSearchDialog() {
     final primaryGreen = Color(0xFF2E7D32);
+    _searchController.clear();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          padding: EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.white, Color(0xFFFAFDFA)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: primaryGreen.withOpacity(0.15),
-              width: 1.5,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          primaryGreen.withOpacity(0.15),
-                          primaryGreen.withOpacity(0.08),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(Icons.search, color: primaryGreen, size: 28),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Find Friends',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: primaryGreen,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Search by name or email',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: primaryGreen.withOpacity(0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 24),
-
-              // Search Field
-              Container(
-                decoration: BoxDecoration(
-                  color: primaryGreen.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: primaryGreen.withOpacity(0.2)),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Enter name or email...',
-                    hintStyle: TextStyle(color: primaryGreen.withOpacity(0.4)),
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: primaryGreen.withOpacity(0.6),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                  ),
-                  autofocus: true,
-                  style: TextStyle(color: primaryGreen, fontSize: 16),
-                ),
-              ),
-              SizedBox(height: 24),
-
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: primaryGreen,
-                        side: BorderSide(color: primaryGreen.withOpacity(0.3)),
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        if (_searchController.text.isNotEmpty) {
-                          _performSearch();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryGreen,
-                        foregroundColor: Colors.white,
-                        elevation: 4,
-                        shadowColor: primaryGreen.withOpacity(0.4),
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.search, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Search',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _performSearch() {
-    final primaryGreen = Color(0xFF2E7D32);
-    final backgroundColor = Color(0xFFF8FFF8);
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: backgroundColor,
-          appBar: AppBar(
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [primaryGreen, Color(0xFF1B5E20)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-            ),
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.search, size: 20),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Search Results',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        '"${_searchController.text}"',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          body: FutureBuilder<List<UserModel>>(
-            future: _dbService.searchUsers(_searchController.text),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(color: primaryGreen),
-                      SizedBox(height: 16),
-                      Text(
-                        'Searching...',
-                        style: TextStyle(
-                          color: primaryGreen,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return _buildEmptySearchResults(query: _searchController.text);
-              }
-
-              final currentUserId = _auth.currentUser!.uid;
-              final users = snapshot.data!
-                  .where((user) => user.uid != currentUserId)
-                  .toList();
-
-              if (users.isEmpty) {
-                return _buildEmptySearchResults(query: _searchController.text);
-              }
-
-              return ListView.builder(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 24),
-                itemCount: users.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return _buildSearchSummaryCard(
-                      query: _searchController.text,
-                      resultCount: users.length,
-                    );
-                  }
-                  return _buildSearchUserCard(users[index - 1]);
-                },
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptySearchResults({required String query}) {
-    final primaryGreen = Color(0xFF2E7D32);
-
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [primaryGreen.withOpacity(0.12), Color(0xFFE8F5E8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryGreen.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.search_off, color: primaryGreen, size: 72),
-            ),
-            SizedBox(height: 32),
-            Text(
-              'No Results Found',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: primaryGreen,
-                letterSpacing: 0.3,
-              ),
-            ),
-            SizedBox(height: 12),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: primaryGreen.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '"$query"',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: primaryGreen,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FontStyle.italic,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'We couldn\'t find any users matching your search.',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 15,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Try searching with a different name or email address.',
-              style: TextStyle(color: Colors.grey[500], fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 32),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: Icon(Icons.arrow_back, size: 18),
-              label: Text(
-                'Try Another Search',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: primaryGreen,
-                side: BorderSide(color: primaryGreen.withOpacity(0.4)),
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchSummaryCard({
-    required String query,
-    required int resultCount,
-  }) {
-    final primaryGreen = Color(0xFF2E7D32);
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 20),
-      padding: EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryGreen.withOpacity(0.08), Color(0xFFE8F5E9)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryGreen.withOpacity(0.2), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: primaryGreen.withOpacity(0.1),
-            blurRadius: 15,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [primaryGreen, Color(0xFF1B5E20)],
-              ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: primaryGreen.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(Icons.check_circle, color: Colors.white, size: 26),
-          ),
-          SizedBox(width: 18),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Found $resultCount ${resultCount == 1 ? 'Match' : 'Matches'}',
-                  style: TextStyle(
-                    color: primaryGreen,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.search,
-                      size: 14,
-                      color: primaryGreen.withOpacity(0.6),
-                    ),
-                    SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Searching: "$query"',
-                        style: TextStyle(
-                          color: primaryGreen.withOpacity(0.7),
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchUserCard(UserModel user) {
-    final primaryGreen = Color(0xFF2E7D32);
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.white, Color(0xFFFAFDFA)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryGreen.withOpacity(0.15), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: primaryGreen.withOpacity(0.08),
-            blurRadius: 15,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Avatar with shadow
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: primaryGreen.withOpacity(0.2),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: GuardianAvatar(style: user.avatarStyle, size: 64),
-          ),
-          SizedBox(width: 18),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.displayName ?? user.email,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: primaryGreen,
-                    fontSize: 17,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.email_outlined,
-                      size: 14,
-                      color: Colors.grey[600],
-                    ),
-                    SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        user.email,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                if (user.bio != null && user.bio!.isNotEmpty) ...[
-                  SizedBox(height: 8),
-                  Text(
-                    user.bio!,
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          SizedBox(width: 12),
-          FutureBuilder<bool>(
-            future: _dbService.areFriends(_auth.currentUser!.uid, user.uid),
-            builder: (context, snapshot) {
-              if (snapshot.hasData && snapshot.data == true) {
-                return Container(
-                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        primaryGreen.withOpacity(0.15),
-                        primaryGreen.withOpacity(0.08),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: primaryGreen.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.check_circle, color: primaryGreen, size: 16),
-                      SizedBox(width: 6),
-                      Text(
-                        'Friends',
-                        style: TextStyle(
-                          color: primaryGreen,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return ElevatedButton(
-                onPressed: () async {
-                  await _dbService.sendFriendRequest(user.uid);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.white),
-                          SizedBox(width: 12),
-                          Text('Friend request sent!'),
-                        ],
-                      ),
-                      backgroundColor: primaryGreen,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryGreen,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  elevation: 4,
-                  shadowColor: primaryGreen.withOpacity(0.4),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.person_add, size: 18),
-                    SizedBox(width: 6),
-                    Text(
-                      'Add',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _LiveSearchSheet(
+        dbService: _dbService,
+        auth: _auth,
+        primaryGreen: primaryGreen,
       ),
     );
   }
@@ -1402,5 +776,478 @@ class _FriendsScreenState extends State<FriendsScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+}
+
+/// Live search sheet with real-time results as you type
+class _LiveSearchSheet extends StatefulWidget {
+  final DatabaseService dbService;
+  final FirebaseAuth auth;
+  final Color primaryGreen;
+
+  const _LiveSearchSheet({
+    required this.dbService,
+    required this.auth,
+    required this.primaryGreen,
+  });
+
+  @override
+  State<_LiveSearchSheet> createState() => _LiveSearchSheetState();
+}
+
+class _LiveSearchSheetState extends State<_LiveSearchSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  List<UserModel> _searchResults = [];
+  bool _isSearching = false;
+  String _lastQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.trim();
+    if (query != _lastQuery) {
+      _lastQuery = query;
+      _performSearch(query);
+    }
+  }
+
+  Future<void> _performSearch(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+
+    final results = await widget.dbService.searchUsers(query);
+    final currentUserId = widget.auth.currentUser?.uid;
+
+    if (mounted) {
+      setState(() {
+        _searchResults = results
+            .where((user) => user.uid != currentUserId)
+            .toList();
+        _isSearching = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryGreen = widget.primaryGreen;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        primaryGreen.withOpacity(0.15),
+                        primaryGreen.withOpacity(0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    Icons.person_search,
+                    color: primaryGreen,
+                    size: 28,
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Find Friends',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: primaryGreen,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      Text(
+                        'Search by name or email',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: primaryGreen.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.close, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+
+          // Search Field
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: primaryGreen.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: primaryGreen.withOpacity(0.2)),
+              ),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Type a name to search...',
+                  hintStyle: TextStyle(color: primaryGreen.withOpacity(0.4)),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: primaryGreen.withOpacity(0.6),
+                  ),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear, color: Colors.grey),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchResults = [];
+                            });
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                ),
+                autofocus: true,
+                style: TextStyle(color: primaryGreen, fontSize: 16),
+              ),
+            ),
+          ),
+
+          SizedBox(height: 16),
+
+          // Results
+          Expanded(child: _buildSearchResults()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    final primaryGreen = widget.primaryGreen;
+
+    if (_isSearching) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: primaryGreen),
+            SizedBox(height: 16),
+            Text(
+              'Searching...',
+              style: TextStyle(color: primaryGreen, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_searchController.text.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search, size: 64, color: primaryGreen.withOpacity(0.3)),
+            SizedBox(height: 16),
+            Text(
+              'Start typing to search',
+              style: TextStyle(
+                color: primaryGreen.withOpacity(0.6),
+                fontSize: 16,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Example: "j" to find names starting with J',
+              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_searchResults.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.person_off,
+              size: 64,
+              color: primaryGreen.withOpacity(0.3),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No users found',
+              style: TextStyle(
+                color: primaryGreen,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Try a different search term',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        return _buildSearchResultCard(_searchResults[index]);
+      },
+    );
+  }
+
+  Widget _buildSearchResultCard(UserModel user) {
+    final primaryGreen = widget.primaryGreen;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: primaryGreen.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: primaryGreen.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          GuardianAvatar(style: user.avatarStyle, size: 56),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user.displayName ?? user.email,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: primaryGreen,
+                    fontSize: 16,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.email_outlined,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        user.email,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 12),
+          _buildFriendshipButton(user),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFriendshipButton(UserModel user) {
+    final primaryGreen = widget.primaryGreen;
+
+    return StreamBuilder<String>(
+      stream: widget.dbService.getFriendshipStatusStream(
+        widget.auth.currentUser!.uid,
+        user.uid,
+      ),
+      builder: (context, snapshot) {
+        final status = snapshot.data ?? 'none';
+
+        // Already friends
+        if (status == 'friends') {
+          return Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: primaryGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: primaryGreen.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, color: primaryGreen, size: 16),
+                SizedBox(width: 6),
+                Text(
+                  'Friends',
+                  style: TextStyle(
+                    color: primaryGreen,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Pending sent
+        if (status == 'pending_sent') {
+          return Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.orange.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.hourglass_empty, color: Colors.orange, size: 16),
+                SizedBox(width: 6),
+                Text(
+                  'Pending',
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Pending received - Accept button
+        if (status == 'pending_received') {
+          return ElevatedButton(
+            onPressed: () async {
+              final requestId = '${user.uid}-${widget.auth.currentUser!.uid}';
+              await widget.dbService.acceptFriendRequest(requestId);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Friend request accepted!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Accept',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+            ),
+          );
+        }
+
+        // No relationship - Add button
+        return ElevatedButton(
+          onPressed: () async {
+            await widget.dbService.sendFriendRequest(user.uid);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 12),
+                    Text('Friend request sent!'),
+                  ],
+                ),
+                backgroundColor: primaryGreen,
+              ),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: primaryGreen,
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.person_add, size: 16),
+              SizedBox(width: 6),
+              Text(
+                'Add',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

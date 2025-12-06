@@ -6,6 +6,7 @@ class GroupMessageModel {
   final String content;
   final DateTime timestamp;
   final String? imageUrl;
+  final List<String> readBy;
 
   GroupMessageModel({
     required this.id,
@@ -15,6 +16,7 @@ class GroupMessageModel {
     required this.content,
     required this.timestamp,
     this.imageUrl,
+    this.readBy = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +28,7 @@ class GroupMessageModel {
       'content': content,
       'timestamp': timestamp.toIso8601String(),
       'imageUrl': imageUrl,
+      'readBy': readBy,
     };
   }
 
@@ -38,6 +41,7 @@ class GroupMessageModel {
       content: map['content'],
       timestamp: DateTime.parse(map['timestamp']),
       imageUrl: map['imageUrl'],
+      readBy: (map['readBy'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
 }

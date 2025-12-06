@@ -429,98 +429,147 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
 
   Widget _buildGroupCard(GroupModel group) {
     final primaryGreen = Color(0xFF2E7D32);
+    const skyBlue = Color(0xFF87CEEB);
     final isCreator = group.creatorId == _auth.currentUser!.uid;
+    final currentUserId = _auth.currentUser!.uid;
 
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EnhancedGroupChatScreen(group: group),
-          ),
-        );
-      },
-      child: Container(
-        margin: EdgeInsets.only(bottom: 12),
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: primaryGreen.withOpacity(0.05),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: primaryGreen.withOpacity(0.1),
-                shape: BoxShape.circle,
+    return StreamBuilder<int>(
+      stream: _dbService.getUnreadGroupCountForGroup(group.id, currentUserId),
+      builder: (context, unreadSnapshot) {
+        final unreadCount = unreadSnapshot.data ?? 0;
+
+        return InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EnhancedGroupChatScreen(group: group),
               ),
-              child: Icon(Icons.groups, color: primaryGreen, size: 28),
+            );
+          },
+          child: Container(
+            margin: EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryGreen.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
             ),
-            SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          group.name,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: primaryGreen,
-                          ),
-                        ),
+            child: Row(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: primaryGreen.withOpacity(0.1),
+                        shape: BoxShape.circle,
                       ),
-                      if (isCreator)
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
+                      child: Icon(Icons.groups, color: primaryGreen, size: 28),
+                    ),
+                    // Notification badge for group
+                    if (unreadCount > 0)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          padding: EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: primaryGreen.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            color: skyBlue,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: skyBlue.withOpacity(0.4),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          child: Text(
-                            'Admin',
-                            style: TextStyle(
-                              color: primaryGreen,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
+                          constraints: BoxConstraints(
+                            minWidth: 20,
+                            minHeight: 20,
+                          ),
+                          child: Center(
+                            child: Text(
+                              unreadCount > 99 ? '99+' : unreadCount.toString(),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
+                      ),
+                  ],
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              group.name,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: primaryGreen,
+                              ),
+                            ),
+                          ),
+                          if (isCreator)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: primaryGreen.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Admin',
+                                style: TextStyle(
+                                  color: primaryGreen,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '${group.memberIds.length} members',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                      if (group.description.isNotEmpty)
+                        Text(
+                          group.description,
+                          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                     ],
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    '${group.memberIds.length} members',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                  if (group.description.isNotEmpty)
-                    Text(
-                      group.description,
-                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -779,7 +828,9 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
 
   Widget _buildConversationCard(Map<String, dynamic> conversation) {
     final primaryGreen = Color(0xFF2E7D32);
+    const skyBlue = Color(0xFF87CEEB);
     final userId = conversation['userId'] as String;
+    final currentUserId = _auth.currentUser!.uid;
 
     return StreamBuilder<UserModel?>(
       stream: _dbService.getUserStream(userId),
@@ -787,96 +838,143 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
         if (!userSnapshot.hasData) return SizedBox.shrink();
         final user = userSnapshot.data!;
         final online = _isUserOnline(user);
-        return InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => EnhancedChatScreen(otherUser: user),
-              ),
-            );
-          },
-          child: Container(
-            margin: EdgeInsets.only(bottom: 8),
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryGreen.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    GuardianAvatar(style: user.avatarStyle, size: 56),
-                    Positioned(
-                      bottom: -2,
-                      right: -2,
-                      child: _buildStatusDot(online),
+
+        // Stream to get unread count for this specific conversation
+        return StreamBuilder<int>(
+          stream: _dbService.getUnreadCountFromUser(userId, currentUserId),
+          builder: (context, unreadSnapshot) {
+            final unreadCount = unreadSnapshot.data ?? 0;
+
+            return InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EnhancedChatScreen(otherUser: user),
+                  ),
+                );
+              },
+              child: Container(
+                margin: EdgeInsets.only(bottom: 8),
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryGreen.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
                     ),
                   ],
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _resolveUserName(user),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: primaryGreen,
+                child: Row(
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        GuardianAvatar(style: user.avatarStyle, size: 56),
+                        Positioned(
+                          bottom: -2,
+                          right: -2,
+                          child: _buildStatusDot(online),
+                        ),
+                        // Notification badge
+                        if (unreadCount > 0)
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: Container(
+                              padding: EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: skyBlue,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: skyBlue.withOpacity(0.4),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              constraints: BoxConstraints(
+                                minWidth: 20,
+                                minHeight: 20,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                          SizedBox(width: 4),
+                      ],
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _resolveUserName(user),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryGreen,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                online ? 'Online' : 'Offline',
+                                style: TextStyle(
+                                  color: online ? Colors.green : Colors.grey[500],
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 4),
                           Text(
-                            online ? 'Online' : 'Offline',
+                            _presenceLabel(user),
                             style: TextStyle(
-                              color: online ? Colors.green : Colors.grey[500],
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                              color: online ? Colors.green : Colors.grey[600],
+                              fontSize: 12,
                             ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            conversation['lastMessage'] ?? '',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        _presenceLabel(user),
-                        style: TextStyle(
-                          color: online ? Colors.green : Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        conversation['lastMessage'] ?? '',
-                        style: TextStyle(color: Colors.grey[600]),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      _formatMessageTime(conversation['timestamp']),
+                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                      textAlign: TextAlign.right,
+                    ),
+                  ],
                 ),
-                SizedBox(width: 8),
-                Text(
-                  _formatMessageTime(conversation['timestamp']),
-                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                  textAlign: TextAlign.right,
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -912,6 +1010,20 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Mark messages from this user as read when opening the chat
+    _markMessagesAsRead();
+  }
+
+  void _markMessagesAsRead() {
+    _dbService.markMessagesAsRead(
+      widget.otherUser.uid,
+      _auth.currentUser!.uid,
+    );
+  }
 
   void _startPrivateVideoCall() {
     final currentUid = _auth.currentUser!.uid;
@@ -1304,6 +1416,20 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Mark group messages as read when opening the group chat
+    _markGroupMessagesAsRead();
+  }
+
+  void _markGroupMessagesAsRead() {
+    _dbService.markAllGroupMessagesAsRead(
+      widget.group.id,
+      _auth.currentUser!.uid,
+    );
+  }
 
   void _startGroupVideoCall() {
     final roomId = 'farmguard-group-${widget.group.id}';
