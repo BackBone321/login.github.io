@@ -460,6 +460,38 @@ class DatabaseService {
         );
   }
 
+  /// Get announcements created by a specific user (admin)
+  Stream<List<AnnouncementModel>> getMyAnnouncements(String userId) {
+    return _firestore
+        .collection('announcements')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+          final announcements = snapshot.docs
+              .map((doc) => AnnouncementModel.fromMap(doc.data()))
+              .toList();
+          // Sort by createdAt descending (newest first)
+          announcements.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return announcements;
+        });
+  }
+
+  /// Delete an announcement
+  Future<void> deleteAnnouncement(String announcementId) async {
+    final docRef = _firestore.collection('announcements').doc(announcementId);
+    final snapshot = await docRef.get();
+    final data = snapshot.data();
+    await docRef.delete();
+    _recordAudit(
+      action: 'announcement.delete',
+      entityType: 'announcement',
+      entityId: announcementId,
+      severity: AuditSeverity.warning,
+      description: 'Deleted announcement "${data?['title'] ?? announcementId}"',
+      metadata: data,
+    );
+  }
+
   // Detection operations
   Future<void> createDetection(DetectionModel detection) async {
     await _firestore

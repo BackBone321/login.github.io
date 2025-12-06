@@ -106,3 +106,4 @@ COMMENT ON COLUMN AUDIT_LOGS.SYNCED_AT IS 'When this record was synced from Fire
 
 
 
+

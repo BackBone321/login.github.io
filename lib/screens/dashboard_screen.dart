@@ -502,6 +502,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             }
             return Column(
               children: snapshot.data!.map((announcement) {
+                final isOwner = announcement.userId == _auth.currentUser!.uid;
                 return Container(
                   margin: EdgeInsets.only(bottom: 12),
                   padding: EdgeInsets.all(20),
@@ -519,13 +520,36 @@ class _DashboardScreenState extends State<DashboardScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        announcement.title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: primaryGreen,
-                          fontSize: 16,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              announcement.title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: primaryGreen,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          if (isOwner)
+                            GestureDetector(
+                              onTap: () => _confirmDeleteAnnouncement(announcement),
+                              child: Container(
+                                padding: EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red[400],
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       SizedBox(height: 8),
                       Text(
@@ -971,6 +995,53 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   String _formatDate(DateTime date) {
     return '${date.month}/${date.day}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}';
+  }
+
+  Future<void> _confirmDeleteAnnouncement(AnnouncementModel announcement) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Announcement'),
+        content: Text(
+          'Are you sure you want to delete "${announcement.title}"?\n\nThis action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _dbService.deleteAnnouncement(announcement.id);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Announcement deleted'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete announcement'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildWeatherCard(WeatherModel? weather) {

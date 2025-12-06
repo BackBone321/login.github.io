@@ -44,15 +44,24 @@ class AuditService {
   }
 
   Stream<List<AuditLogModel>> streamLogs({int limit = 100, String? severity}) {
-    Query<Map<String, dynamic>> query = _firestore
-        .collection('audit_logs')
-        .orderBy('timestamp', descending: true)
-        .limit(limit);
+    Query<Map<String, dynamic>> query = _firestore.collection('audit_logs');
 
     if (severity != null) {
+      // When filtering by severity, query without orderBy to avoid needing composite index
       query = query.where('severity', isEqualTo: severity);
+      return query.snapshots().map((snapshot) {
+        final logs = snapshot.docs
+            .map((doc) => AuditLogModel.fromMap(doc.data(), documentId: doc.id))
+            .toList();
+        // Sort by timestamp descending on client side
+        logs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        // Apply limit after sorting
+        return logs.take(limit).toList();
+      });
     }
 
+    // No severity filter - can use orderBy safely
+    query = query.orderBy('timestamp', descending: true).limit(limit);
     return query.snapshots().map(
       (snapshot) => snapshot.docs
           .map((doc) => AuditLogModel.fromMap(doc.data(), documentId: doc.id))
