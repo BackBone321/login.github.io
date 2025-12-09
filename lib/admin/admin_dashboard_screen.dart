@@ -756,7 +756,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 1.4,
+            childAspectRatio: 1.2,
             children: [
               _buildCompactMetricCard(
                 title: 'Total',
@@ -839,7 +839,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -853,26 +853,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             value,
             style: TextStyle(
               color: color,
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w700,
             ),
           ),
-          Text(title, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: TextStyle(color: Colors.grey[600], fontSize: 11),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );

@@ -199,74 +199,133 @@ class _AdminDetectionAccessScreenState
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: users.length,
-                    separatorBuilder: (_, __) => const Divider(height: 24),
+                    separatorBuilder: (_, __) => const SizedBox(height: 16),
                     itemBuilder: (context, index) {
                       final user = users[index];
                       final access = accessMap[user.uid];
                       final hasAccess = access?.canAccess ?? false;
 
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
-                          backgroundColor: hasAccess
-                              ? const Color(0xFF2E7D32).withOpacity(0.15)
-                              : Colors.grey.withOpacity(0.15),
-                          child: Icon(
-                            hasAccess
-                                ? Icons.verified_user_outlined
-                                : Icons.lock_outline,
-                            color: hasAccess
-                                ? const Color(0xFF2E7D32)
-                                : Colors.grey[700],
-                          ),
-                        ),
-                        title: Text(
-                          user.displayName ?? user.email,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Column(
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              user.email,
-                              style: TextStyle(color: Colors.grey[700]),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _formatAllowedTypes(access),
-                              style: TextStyle(
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: hasAccess
+                                  ? const Color(0xFF2E7D32).withOpacity(0.15)
+                                  : Colors.grey.withOpacity(0.15),
+                              child: Icon(
+                                hasAccess
+                                    ? Icons.verified_user_outlined
+                                    : Icons.lock_outline,
                                 color: hasAccess
                                     ? const Color(0xFF2E7D32)
-                                    : Colors.grey[600],
-                                fontWeight: FontWeight.w600,
+                                    : Colors.grey[700],
+                                size: 20,
                               ),
                             ),
-                          ],
-                        ),
-                        trailing: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Chip(
-                              label: Text(
-                                hasAccess ? 'Has access' : 'No access',
-                                style: TextStyle(
-                                  color: hasAccess
-                                      ? const Color(0xFF2E7D32)
-                                      : Colors.grey[600],
-                                  fontWeight: FontWeight.w600,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    user.displayName ?? user.email,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    user.email,
+                                    style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _formatAllowedTypes(access),
+                                    style: TextStyle(
+                                      color: hasAccess
+                                          ? const Color(0xFF2E7D32)
+                                          : Colors.grey[600],
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Chip(
+                                  label: Text(
+                                    hasAccess ? 'Has access' : 'No access',
+                                    style: TextStyle(
+                                      color: hasAccess
+                                          ? const Color(0xFF2E7D32)
+                                          : Colors.grey[600],
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 0,
+                                  ),
+                                  labelPadding: EdgeInsets.zero,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  backgroundColor: hasAccess
+                                      ? const Color(
+                                          0xFF2E7D32,
+                                        ).withOpacity(0.12)
+                                      : Colors.grey.withOpacity(0.12),
                                 ),
-                              ),
-                              backgroundColor: hasAccess
-                                  ? const Color(0xFF2E7D32).withOpacity(0.12)
-                                  : Colors.grey.withOpacity(0.12),
-                            ),
-                            TextButton.icon(
-                              onPressed: () => _openAccessSheet(user, access),
-                              icon: const Icon(Icons.tune_outlined, size: 18),
-                              label: Text(
-                                hasAccess ? 'Manage access' : 'Grant access',
-                              ),
+                                const SizedBox(height: 2),
+                                TextButton(
+                                  onPressed: () =>
+                                      _openAccessSheet(user, access),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.tune_outlined,
+                                        size: 14,
+                                        color: hasAccess
+                                            ? const Color(0xFF2E7D32)
+                                            : Colors.grey[700],
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        hasAccess ? 'Manage' : 'Grant',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: hasAccess
+                                              ? const Color(0xFF2E7D32)
+                                              : Colors.grey[700],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

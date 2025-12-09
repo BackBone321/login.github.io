@@ -1,5 +1,6 @@
 {
     "cmake.sourceDirectory": "C:/Desktop/login/linux",
     "liveServer.settings.port": 5501,
-    "CodeGPT.apiKey": "OpenAI"
+    "CodeGPT.apiKey": "OpenAI",
+    "cmake.ignoreCMakeListsMissing": true
 }
