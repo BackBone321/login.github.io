@@ -44,31 +44,61 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
-        titleSpacing: 24,
+        titleSpacing: 8,
         iconTheme: IconThemeData(color: brandColor),
-        title: Row(
-          children: [
-            Text(
-              'Admin Collaboration Hub',
-              style: TextStyle(
-                color: brandColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Icon(Icons.wifi_tethering_outlined, color: Color(0xFF2E7D32)),
-          ],
+        title: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 400;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    isWide ? 'Admin Collaboration Hub' : 'Collaboration Hub',
+                    style: TextStyle(
+                      color: brandColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: isWide ? null : 16,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isWide) ...[
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.wifi_tethering_outlined,
+                    color: Color(0xFF2E7D32),
+                    size: 20,
+                  ),
+                ],
+              ],
+            );
+          },
         ),
         actions: [
-          TextButton.icon(
-            onPressed: user == null ? null : _showCreateGroupDialog,
-            icon: const Icon(Icons.add_circle_outline),
-            label: const Text('New Group'),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF2E7D32),
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 400;
+              if (isWide) {
+                return TextButton.icon(
+                  onPressed: user == null ? null : _showCreateGroupDialog,
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('New Group'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF2E7D32),
+                  ),
+                );
+              } else {
+                return IconButton(
+                  onPressed: user == null ? null : _showCreateGroupDialog,
+                  icon: const Icon(Icons.add_circle_outline),
+                  tooltip: 'New Group',
+                  color: const Color(0xFF2E7D32),
+                );
+              }
+            },
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
         ],
       ),
       body: user == null
@@ -77,7 +107,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
               builder: (context, constraints) {
                 final isDesktop = constraints.maxWidth >= 1000;
                 final groupsPanel = SizedBox(
-                  width: isDesktop ? 360 : constraints.maxWidth,
+                  width: isDesktop ? 360 : double.infinity,
                   child: _buildGroupsPanel(),
                 );
                 final chatPanel = _buildChatPanel(isDesktop);
@@ -94,8 +124,8 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
 
                 return Column(
                   children: [
-                    groupsPanel,
-                    Expanded(child: chatPanel),
+                    Expanded(flex: 1, child: groupsPanel),
+                    Expanded(flex: 1, child: chatPanel),
                   ],
                 );
               },
@@ -131,10 +161,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                 SizedBox(height: 16),
                 Text(
                   'Sign in required',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: 8),
                 Text(
@@ -167,16 +194,13 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
             ),
           ],
         ),
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
         child: StreamBuilder<List<GroupModel>>(
           stream: _dbService.getAllGroups(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox(
-                height: 420,
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
               );
             }
 
@@ -187,12 +211,12 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
             final filteredGroups = query.isEmpty
                 ? groups
                 : groups
-                    .where(
-                      (group) =>
-                          group.name.toLowerCase().contains(query) ||
-                          group.description.toLowerCase().contains(query),
-                    )
-                    .toList();
+                      .where(
+                        (group) =>
+                            group.name.toLowerCase().contains(query) ||
+                            group.description.toLowerCase().contains(query),
+                      )
+                      .toList();
 
             final totalMembers = groups
                 .expand((group) => group.memberIds)
@@ -202,40 +226,54 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Group channels',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: accent,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Group channels',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: accent,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${groups.length} active groups · $totalMembers unique members',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search groups or descriptions',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          filled: true,
+                          fillColor: const Color(0xFFF6F7FB),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${groups.length} active groups · $totalMembers unique members',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search groups or descriptions',
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: const Color(0xFFF6F7FB),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
                 Expanded(
                   child: filteredGroups.isEmpty
                       ? _buildEmptyGroupsState()
                       : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                           itemCount: filteredGroups.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final group = filteredGroups[index];
                             final isSelected = _selectedGroup?.id == group.id;
@@ -274,10 +312,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
           const SizedBox(height: 16),
           const Text(
             'No groups yet',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
@@ -289,10 +324,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
     );
   }
 
-  Widget _buildGroupTile(
-    GroupModel group, {
-    required bool isSelected,
-  }) {
+  Widget _buildGroupTile(GroupModel group, {required bool isSelected}) {
     final accent = const Color(0xFF2E7D32);
 
     return InkWell(
@@ -301,7 +333,9 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? accent.withOpacity(0.08) : const Color(0xFFF9FAFB),
+          color: isSelected
+              ? accent.withOpacity(0.08)
+              : const Color(0xFFF9FAFB),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected ? accent : Colors.transparent,
@@ -354,7 +388,9 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                             const SizedBox(width: 4),
                             Text(
                               '${group.memberIds.length}',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -366,10 +402,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                     group.description.isNotEmpty
                         ? group.description
                         : 'No description provided',
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -554,10 +587,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                   const SizedBox(height: 6),
                   Text(
                     group.description,
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
                   ),
                 ],
               ],
@@ -574,7 +604,9 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                 label: const Text('Members'),
               ),
               OutlinedButton.icon(
-                onPressed: isMember ? _showAddMembersDialog : () => _joinGroup(group),
+                onPressed: isMember
+                    ? _showAddMembersDialog
+                    : () => _joinGroup(group),
                 icon: Icon(isMember ? Icons.person_add_alt : Icons.login),
                 label: Text(isMember ? 'Add' : 'Join'),
               ),
@@ -601,7 +633,11 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.forum_outlined, size: 48, color: Color(0xFFBDBDBD)),
+                const Icon(
+                  Icons.forum_outlined,
+                  size: 48,
+                  color: Color(0xFFBDBDBD),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'No messages yet',
@@ -630,7 +666,8 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
           itemBuilder: (context, index) {
             final message = sorted[index];
             final isMe = message.senderId == _auth.currentUser?.uid;
-            final showHeader = index == 0 ||
+            final showHeader =
+                index == 0 ||
                 sorted[index - 1].senderId != message.senderId ||
                 sorted[index - 1].timestamp.day != message.timestamp.day;
 
@@ -652,10 +689,8 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
     required bool showHeader,
     required Color accent,
   }) {
-    final alignment =
-        isMe ? Alignment.centerRight : Alignment.centerLeft;
-    final bubbleColor =
-        isMe ? accent : const Color(0xFFF3F4F6);
+    final alignment = isMe ? Alignment.centerRight : Alignment.centerLeft;
+    final bubbleColor = isMe ? accent : const Color(0xFFF3F4F6);
     final textColor = isMe ? Colors.white : const Color(0xFF1B1C1E);
 
     return Padding(
@@ -679,8 +714,9 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Column(
-                crossAxisAlignment:
-                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (showHeader)
@@ -721,7 +757,8 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
   }
 
   Widget _buildComposer(GroupModel group) {
-    final isMember = _auth.currentUser != null &&
+    final isMember =
+        _auth.currentUser != null &&
         group.memberIds.contains(_auth.currentUser!.uid);
 
     if (!isMember) {
@@ -751,8 +788,8 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
       child: Row(
         children: [
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.attach_file_outlined),
+            onPressed: _showEmojiPickerAdmin,
+            icon: const Icon(Icons.add),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -815,6 +852,119 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _sendEmojiAdmin(String emoji) async {
+    final currentUser = _auth.currentUser;
+    final group = _selectedGroup;
+
+    if (currentUser == null || group == null) return;
+
+    try {
+      final message = GroupMessageModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        groupId: group.id,
+        senderId: currentUser.uid,
+        senderName: currentUser.displayName ?? currentUser.email ?? 'Admin',
+        content: emoji,
+        timestamp: DateTime.now(),
+      );
+
+      await _dbService.sendGroupMessage(message);
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send emoji: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showEmojiPickerAdmin() {
+    final primaryGreen = const Color(0xFF2E7D32);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Choose an emoji',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: primaryGreen,
+              ),
+            ),
+            SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildEmojiButtonAdmin('😊', 'Happy', primaryGreen),
+                _buildEmojiButtonAdmin('😢', 'Sad', primaryGreen),
+                _buildEmojiButtonAdmin('😄', 'Smile', primaryGreen),
+                _buildEmojiButtonAdmin('😠', 'Angry', primaryGreen),
+              ],
+            ),
+            SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmojiButtonAdmin(String emoji, String label, Color color) {
+    return GestureDetector(
+      onTap: () => _sendEmojiAdmin(emoji),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withOpacity(0.2)),
+            ),
+            child: Center(child: Text(emoji, style: TextStyle(fontSize: 32))),
+          ),
+          SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _joinGroup(GroupModel group) async {
@@ -901,16 +1051,17 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                               if (isCreator)
                                 Chip(
                                   label: const Text('Owner'),
-                                  backgroundColor:
-                                      Colors.blue.withOpacity(0.1),
-                                  labelStyle:
-                                      const TextStyle(color: Colors.blue),
+                                  backgroundColor: Colors.blue.withOpacity(0.1),
+                                  labelStyle: const TextStyle(
+                                    color: Colors.blue,
+                                  ),
                                 ),
                               if (isAdmin && !isCreator)
                                 Chip(
                                   label: const Text('Admin'),
-                                  backgroundColor:
-                                      const Color(0xFF2E7D32).withOpacity(0.1),
+                                  backgroundColor: const Color(
+                                    0xFF2E7D32,
+                                  ).withOpacity(0.1),
                                   labelStyle: const TextStyle(
                                     color: Color(0xFF1B4332),
                                   ),
@@ -1126,8 +1277,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                       ? null
                       : () async {
                           final group = GroupModel(
-                            id: DateTime.now()
-                                .millisecondsSinceEpoch
+                            id: DateTime.now().millisecondsSinceEpoch
                                 .toString(),
                             name: nameController.text.trim(),
                             description: descriptionController.text.trim(),
@@ -1219,4 +1369,3 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
     return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
   }
 }
-

@@ -1050,6 +1050,105 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
     _launchVideoCall(context, roomId);
   }
 
+  Future<void> _sendEmoji(String emoji) async {
+    final message = MessageModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      senderId: _auth.currentUser!.uid,
+      receiverId: widget.otherUser.uid,
+      senderName:
+          _auth.currentUser!.displayName ?? _auth.currentUser!.email ?? 'User',
+      content: emoji,
+      timestamp: DateTime.now(),
+      isRead: false,
+    );
+    await _dbService.sendMessage(message);
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _showEmojiPicker() {
+    final primaryGreen = Color(0xFF2E7D32);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Choose an emoji',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: primaryGreen,
+              ),
+            ),
+            SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildEmojiButton('😊', 'Happy', primaryGreen),
+                _buildEmojiButton('😢', 'Sad', primaryGreen),
+                _buildEmojiButton('😄', 'Smile', primaryGreen),
+                _buildEmojiButton('😠', 'Angry', primaryGreen),
+              ],
+            ),
+            SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmojiButton(String emoji, String label, Color color) {
+    return GestureDetector(
+      onTap: () => _sendEmoji(emoji),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withOpacity(0.2)),
+            ),
+            child: Center(child: Text(emoji, style: TextStyle(fontSize: 32))),
+          ),
+          SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryGreen = Color(0xFF2E7D32);
@@ -1225,9 +1324,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                         children: [
                           IconButton(
                             icon: Icon(Icons.add, color: primaryGreen),
-                            onPressed: () {
-                              // Attachment options in future
-                            },
+                            onPressed: _showEmojiPicker,
                           ),
                           Expanded(
                             child: TextField(
@@ -1448,6 +1545,104 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
   void _startGroupVoiceCall() {
     final roomId = 'farmguard-voice-${widget.group.id}';
     _launchVideoCall(context, roomId);
+  }
+
+  Future<void> _sendEmojiGroup(String emoji) async {
+    final message = GroupMessageModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      groupId: widget.group.id,
+      senderId: _auth.currentUser!.uid,
+      senderName:
+          _auth.currentUser!.displayName ?? _auth.currentUser!.email ?? 'User',
+      content: emoji,
+      timestamp: DateTime.now(),
+    );
+    await _dbService.sendGroupMessage(message);
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _showEmojiPickerGroup() {
+    final primaryGreen = Color(0xFF2E7D32);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Choose an emoji',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: primaryGreen,
+              ),
+            ),
+            SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildEmojiButtonGroup('😊', 'Happy', primaryGreen),
+                _buildEmojiButtonGroup('😢', 'Sad', primaryGreen),
+                _buildEmojiButtonGroup('😄', 'Smile', primaryGreen),
+                _buildEmojiButtonGroup('😠', 'Angry', primaryGreen),
+              ],
+            ),
+            SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmojiButtonGroup(String emoji, String label, Color color) {
+    return GestureDetector(
+      onTap: () => _sendEmojiGroup(emoji),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withOpacity(0.2)),
+            ),
+            child: Center(child: Text(emoji, style: TextStyle(fontSize: 32))),
+          ),
+          SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _confirmDeleteGroup() async {
@@ -1763,9 +1958,7 @@ class _EnhancedGroupChatScreenState extends State<EnhancedGroupChatScreen> {
                         children: [
                           IconButton(
                             icon: Icon(Icons.add, color: primaryGreen),
-                            onPressed: () {
-                              // Add attachment options
-                            },
+                            onPressed: _showEmojiPickerGroup,
                           ),
                           Expanded(
                             child: TextField(
