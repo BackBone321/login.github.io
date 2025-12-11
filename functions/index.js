@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 const oracledb = require('oracledb');
+const axios = require('axios');
 require('dotenv').config();
 
 admin.initializeApp();
@@ -171,26 +172,130 @@ exports.manualSyncAuditLogs = functions
     return results;
   });
 
-// Use environment variables instead of deprecated functions.config()
-const gmailEmail = process.env.GMAIL_EMAIL;
-const gmailPassword = process.env.GMAIL_APP_PASSWORD;
+// EmailJS Configuration (using environment variables)
+const emailjsServiceId = process.env.EMAILJS_SERVICE_ID || 'service_yp8e8yv';
+const emailjsTemplateId = process.env.EMAILJS_TEMPLATE_ID || 'template_cp368bp';
+const emailjsPublicKey = process.env.EMAILJS_PUBLIC_KEY || 'ORSGxHfkgWz4A7WVd';
+const emailjsApiUrl = 'https://api.emailjs.com/api/v1.0/email/send';
 
-if (!gmailEmail || !gmailPassword) {
-  console.warn(
-    'Gmail credentials are not configured. Please set GMAIL_EMAIL and GMAIL_APP_PASSWORD in .env file'
-  );
+// Gmail configuration - try Firebase config first (deprecated but still works), then environment variables
+// You can set these using: firebase functions:config:set gmail.email="..." gmail.password="..."
+const functionsConfig = functions.config();
+const gmailEmail = functionsConfig.gmail?.email || process.env.GMAIL_EMAIL;
+const gmailPassword = functionsConfig.gmail?.password || process.env.GMAIL_APP_PASSWORD;
+
+let transporter = null;
+if (gmailEmail && gmailPassword) {
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: gmailEmail,
+      pass: gmailPassword,
+    },
+  });
 }
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: gmailEmail,
-    pass: gmailPassword,
-  },
-});
+// Helper function to send email via EmailJS
+async function sendViaEmailJS(email, code, purpose) {
+  const purposeText = purpose === 'change_password'
+    ? 'Use this code to reset your password.'
+    : purpose === 'signup_verification'
+    ? 'Use this code to verify your account.'
+    : 'Use this code to verify your login.';
+
+  const emailBody = {
+    service_id: emailjsServiceId,
+    template_id: emailjsTemplateId,
+    user_id: emailjsPublicKey,
+    template_params: {
+      to_email: email,
+      otp: code,
+      purpose: purposeText,
+      expiry_time: '10 minutes',
+    },
+  };
+
+  try {
+    const response = await axios.post(emailjsApiUrl, emailBody, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (response.status === 200) {
+      console.log(`✅ EmailJS OTP sent successfully to ${email}`);
+      return { success: true };
+    } else {
+      throw new Error(`EmailJS returned status ${response.status}`);
+    }
+  } catch (error) {
+    console.error('EmailJS error:', error.message);
+    throw error;
+  }
+}
+
+// Helper function to send email via Gmail (fallback)
+async function sendViaGmail(email, code, purpose) {
+  if (!transporter) {
+    throw new Error('Gmail transporter is not configured');
+  }
+
+  const purposeCopy =
+    purpose === 'change_password'
+      ? 'Use this code to reset your password.'
+      : purpose === 'signup_verification'
+      ? 'Use this code to verify your account.'
+      : 'Use this code to verify your login.';
+  const subject =
+    purpose === 'change_password'
+      ? 'Reset your AGRI GUARD password'
+      : 'Your AGRI GUARD verification code';
+
+  const mailOptions = {
+    from: `"AGRI GUARD" <${gmailEmail}>`,
+    to: email,
+    subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #2E7D32; color: white; padding: 20px; text-align: center;">
+          <h1>AGRI GUARD</h1>
+          <p>${purpose === 'change_password' ? 'Password Reset' : 'Sign-In Verification'}</p>
+        </div>
+        <div style="padding: 30px; background-color: #f9f9f9;">
+          <h2 style="color: #2E7D32; text-align: center;">Your One-Time Password</h2>
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="font-size: 36px; font-weight: bold; color: #2E7D32;
+                        background-color: #C8E6C9; padding: 20px; border-radius: 10px;
+                        display: inline-block; letter-spacing: 5px;">
+              ${code}
+            </div>
+          </div>
+          <p style="text-align: center; color: #666; font-size: 16px;">
+            This code will expire in <strong>10 minutes</strong>.
+          </p>
+          <p style="text-align: center; color: #666; font-size: 14px;">
+            ${purposeCopy}
+          </p>
+          <p style="text-align: center; color: #666; font-size: 12px;">
+            If you did not request this code, you can safely ignore this email.
+          </p>
+        </div>
+        <div style="background-color: #2E7D32; color: white; padding: 15px; text-align: center;">
+          <p style="margin: 0;">© ${new Date().getFullYear()} AGRI GUARD. All rights reserved.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+  console.log(`✅ Gmail OTP sent successfully to ${email}`);
+  return { success: true };
+}
 
 exports.sendOTP = functions
   .region('us-central1')
+  .runWith({
+    timeoutSeconds: 60,
+    memory: '256MB',
+  })
   .https.onCall(async (data, context) => {
     const { email, code, purpose = 'auth_verification' } = data;
 
@@ -209,63 +314,31 @@ exports.sendOTP = functions
       );
     }
 
-    if (!gmailEmail || !gmailPassword) {
-      throw new functions.https.HttpsError(
-        'failed-precondition',
-        'Email service is not configured'
-      );
-    }
-
-    const purposeCopy =
-      purpose === 'change_password'
-        ? 'Use this code to reset your password.'
-        : 'Use this code to verify your login.';
-    const subject =
-      purpose === 'change_password'
-        ? 'Reset your AGRI GUARD password'
-        : 'Your AGRI GUARD verification code';
-
     try {
-      const mailOptions = {
-        from: `"AGRI GUARD" <${gmailEmail}>`,
-        to: email,
-        subject,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #2E7D32; color: white; padding: 20px; text-align: center;">
-              <h1>AGRI GUARD</h1>
-              <p>${purpose === 'change_password' ? 'Password Reset' : 'Sign-In Verification'}</p>
-            </div>
-            <div style="padding: 30px; background-color: #f9f9f9;">
-              <h2 style="color: #2E7D32; text-align: center;">Your One-Time Password</h2>
-              <div style="text-align: center; margin: 30px 0;">
-                <div style="font-size: 36px; font-weight: bold; color: #2E7D32;
-                            background-color: #C8E6C9; padding: 20px; border-radius: 10px;
-                            display: inline-block; letter-spacing: 5px;">
-                  ${code}
-                </div>
-              </div>
-              <p style="text-align: center; color: #666; font-size: 16px;">
-                This code will expire in <strong>10 minutes</strong>.
-              </p>
-              <p style="text-align: center; color: #666; font-size: 14px;">
-                ${purposeCopy}
-              </p>
-              <p style="text-align: center; color: #666; font-size: 12px;">
-                If you did not request this code, you can safely ignore this email.
-              </p>
-            </div>
-            <div style="background-color: #2E7D32; color: white; padding: 15px; text-align: center;">
-              <p style="margin: 0;">© ${new Date().getFullYear()} AGRI GUARD. All rights reserved.</p>
-            </div>
-          </div>
-        `,
-      };
-
-      await transporter.sendMail(mailOptions);
-      console.log(`OTP sent successfully to ${email}`);
-
-      return { success: true, message: 'OTP sent successfully' };
+      // Try Gmail first (more reliable for server-side)
+      if (transporter) {
+        try {
+          await sendViaGmail(email, code, purpose);
+          return { success: true, message: 'OTP sent successfully via Gmail' };
+        } catch (gmailError) {
+          console.warn('Gmail failed, trying EmailJS fallback:', gmailError.message);
+          // Fallback to EmailJS if Gmail fails
+          await sendViaEmailJS(email, code, purpose);
+          return { success: true, message: 'OTP sent successfully via EmailJS (fallback)' };
+        }
+      } else {
+        // If no Gmail config, try EmailJS only
+        try {
+          await sendViaEmailJS(email, code, purpose);
+          return { success: true, message: 'OTP sent successfully via EmailJS' };
+        } catch (emailjsError) {
+          console.error('EmailJS also failed:', emailjsError.message);
+          throw new functions.https.HttpsError(
+            'failed-precondition',
+            'Email service not configured. Please set Gmail credentials using: firebase functions:config:set gmail.email="your@gmail.com" gmail.password="app-password"'
+          );
+        }
+      }
     } catch (error) {
       console.error('Error sending OTP:', error);
       throw new functions.https.HttpsError(

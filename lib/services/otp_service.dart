@@ -1,11 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
-import '../config/emailjs_config.dart';
-import '../config/resend_config.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../models/audit_log_model.dart';
 import '../models/otp_model.dart';
 import 'audit_service.dart';
@@ -138,134 +135,104 @@ class OTPService {
     required String otp,
     required String purpose,
   }) async {
-    // Use Resend for mobile apps (Android/iOS) - works on all platforms!
-    // Use EmailJS only for web (since it's already configured)
-    if (!kIsWeb) {
-      // Mobile platform - use Resend
-      try {
-        await _sendOtpViaResend(email: email, otp: otp, purpose: purpose);
-        _recordOtpAudit(
-          action: 'otp.email_sent',
-          severity: AuditSeverity.info,
-          description: 'OTP email dispatched via Resend',
-          email: email,
-          metadata: {'purpose': purpose, 'platform': 'mobile'},
-        );
-      } catch (e) {
-        _recordOtpAudit(
-          action: 'otp.email_failed',
-          severity: AuditSeverity.warning,
-          description: 'Resend failed to deliver OTP',
-          email: email,
-          metadata: {
-            'purpose': purpose,
-            'platform': 'mobile',
-            'error': e.toString(),
-          },
-        );
-        throw Exception('Failed to send OTP email: $e');
-      }
-    } else {
-      // Web platform - use EmailJS
-      final response = await http.post(
-        Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'service_id': EmailJsConfig.serviceId,
-          'template_id': EmailJsConfig.templateId,
-          'user_id': EmailJsConfig.publicKey,
-          'template_params': {
-            'to_email': email,
-            'otp': otp,
-            'purpose': purpose,
-          },
-        }),
+    // Use Firebase Cloud Functions for all platforms (web and mobile)
+    // This allows EmailJS to work on mobile through the backend
+    try {
+      await _sendOtpViaFirebaseFunctions(
+        email: email,
+        otp: otp,
+        purpose: purpose,
       );
-
-      if (response.statusCode != 200) {
-        _recordOtpAudit(
-          action: 'otp.email_failed',
-          severity: AuditSeverity.warning,
-          description: 'EmailJS failed to deliver OTP',
-          email: email,
-          metadata: {
-            'purpose': purpose,
-            'platform': 'web',
-            'statusCode': response.statusCode,
-            'body': response.body,
-          },
-        );
-        throw Exception('EmailJS failed: ${response.body}');
-      }
       _recordOtpAudit(
         action: 'otp.email_sent',
         severity: AuditSeverity.info,
-        description: 'OTP email dispatched via EmailJS',
+        description: 'OTP email dispatched via Firebase Functions (EmailJS)',
         email: email,
-        metadata: {'purpose': purpose, 'platform': 'web'},
+        metadata: {
+          'purpose': purpose,
+          'platform': kIsWeb ? 'web' : 'mobile',
+          'method': 'firebase_functions_emailjs',
+        },
       );
+    } catch (e) {
+      print('❌ OTP email failed for $email: $e');
+      _recordOtpAudit(
+        action: 'otp.email_failed',
+        severity: AuditSeverity.warning,
+        description: 'Firebase Functions failed to deliver OTP',
+        email: email,
+        metadata: {
+          'purpose': purpose,
+          'platform': kIsWeb ? 'web' : 'mobile',
+          'error': e.toString(),
+        },
+      );
+      // Re-throw with more context for debugging
+      throw Exception('Failed to send OTP email. Error: $e');
     }
   }
 
-  Future<void> _sendOtpViaResend({
+  Future<void> _sendOtpViaFirebaseFunctions({
     required String email,
     required String otp,
     required String purpose,
   }) async {
-    final purposeText = purpose == 'change_password'
-        ? 'Use this code to reset your password.'
-        : 'Use this code to verify your account.';
+    try {
+      print('📧 Attempting to send OTP via Firebase Functions to $email');
 
-    final subject = purpose == 'change_password'
-        ? 'Reset your AGRI GUARD password'
-        : 'Your AGRI GUARD verification code';
+      // Use the same region as defined in Firebase Functions (us-central1)
+      final functions = FirebaseFunctions.instanceFor(region: 'us-central1');
+      final callable = functions.httpsCallable(
+        'sendOTP',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 60)),
+      );
 
-    final htmlBody =
-        '''
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #2E7D32; color: white; padding: 20px; text-align: center;">
-    <h1 style="margin: 0;">AGRI GUARD</h1>
-    <p style="margin: 5px 0 0;">${purpose == 'change_password' ? 'Password Reset' : 'Sign-In Verification'}</p>
-  </div>
-  <div style="padding: 30px; background-color: #f9f9f9;">
-    <h2 style="color: #2E7D32; text-align: center;">Your One-Time Password</h2>
-    <div style="text-align: center; margin: 30px 0;">
-      <div style="font-size: 36px; font-weight: bold; color: #2E7D32; background-color: #C8E6C9; padding: 20px; border-radius: 10px; display: inline-block; letter-spacing: 5px;">
-        $otp
-      </div>
-    </div>
-    <p style="text-align: center; color: #666; font-size: 16px;">
-      This code will expire in <strong>10 minutes</strong>.
-    </p>
-    <p style="text-align: center; color: #666; font-size: 14px;">
-      $purposeText
-    </p>
-    <p style="text-align: center; color: #666; font-size: 12px;">
-      If you did not request this code, you can safely ignore this email.
-    </p>
-  </div>
-  <div style="background-color: #2E7D32; color: white; padding: 15px; text-align: center;">
-    <p style="margin: 0;">© ${DateTime.now().year} AGRI GUARD. All rights reserved.</p>
-  </div>
-</div>
-''';
+      print('📡 Calling Firebase Function sendOTP...');
+      final response = await callable.call(<String, dynamic>{
+        'email': email,
+        'code': otp,
+        'purpose': purpose,
+      });
 
-    final response = await http.post(
-      Uri.parse(ResendConfig.apiUrl),
-      headers: {
-        'Authorization': 'Bearer ${ResendConfig.apiKey}',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'from': ResendConfig.fromEmail,
-        'to': [email],
-        'subject': subject,
-        'html': htmlBody,
-      }),
-    );
+      print('📨 Firebase Function response received: ${response.data}');
+      final data = response.data;
 
-    if (response.statusCode != 200) {
-      throw Exception('Resend API error: ${response.body}');
+      // Check for success in various formats
+      final wasSuccessful =
+          data is Map &&
+          (data['success'] == true ||
+              data['status'] == 'ok' ||
+              (data['message'] != null &&
+                  data['message'].toString().toLowerCase().contains(
+                    'success',
+                  )));
+
+      if (!wasSuccessful) {
+        final errorMsg = data is Map
+            ? 'Error: ${data['error'] ?? data['message'] ?? data.toString()}'
+            : 'Unknown error: ${data.toString()}';
+        print('❌ Firebase Function error response: $data');
+        throw Exception(errorMsg);
+      }
+
+      print('✅ Firebase Function OTP sent successfully to $email');
+    } on FirebaseFunctionsException catch (e) {
+      print('❌ Firebase Functions exception: ${e.code} - ${e.message}');
+      print('Details: ${e.details}');
+      
+      // Provide user-friendly error messages
+      if (e.code == 'not-found') {
+        throw Exception('Email service not configured. Please contact support or check Firebase Functions deployment.');
+      } else if (e.code == 'failed-precondition') {
+        throw Exception('Email service configuration is missing. Please check Firebase Functions setup.');
+      }
+      
+      // Generic error message for users
+      throw Exception('Failed to send email. Please try again later or contact support.');
+    } catch (e, stackTrace) {
+      print('❌ Firebase Functions error: $e');
+      print('Stack trace: $stackTrace');
+      throw Exception('Failed to send OTP via Firebase Functions: $e');
     }
   }
 

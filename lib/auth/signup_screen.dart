@@ -68,18 +68,38 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       );
 
-      await _otpService.sendSignupOtp(firebaseUser.email!);
+      try {
+        await _otpService.sendSignupOtp(firebaseUser.email!);
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Account created! Enter the verification code sent to ${firebaseUser.email}',
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Account created! Enter the verification code sent to ${firebaseUser.email}',
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 5),
           ),
-          backgroundColor: Colors.green,
-        ),
-      );
+        );
+      } catch (e) {
+        print('❌ Error sending OTP: $e');
+        if (!mounted) return;
+        
+        // Show user-friendly error message
+        final errorMessage = e.toString().contains('not configured') || 
+                            e.toString().contains('not-found')
+            ? 'Account created! However, email verification service is not set up yet.\n\nYou can still continue to verify your email later, or contact support for assistance.'
+            : 'Account created! Please check your email inbox (and spam folder) for the verification code.\n\nIf you don\'t receive it, you can tap "Resend Code" on the next screen.';
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 10),
+          ),
+        );
+      }
 
       Navigator.pushReplacement(
         context,
