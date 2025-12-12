@@ -39,3 +39,4 @@ Run your Flutter app and try creating a new account. You should receive the OTP 
 
 **Note:** After setting config, the function will use Gmail as the primary email service (more reliable than EmailJS for server-side).
 
+

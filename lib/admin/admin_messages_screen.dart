@@ -225,6 +225,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.max,
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
@@ -274,6 +275,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                           itemCount: filteredGroups.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: 12),
+                          shrinkWrap: false,
                           itemBuilder: (context, index) {
                             final group = filteredGroups[index];
                             final isSelected = _selectedGroup?.id == group.id;

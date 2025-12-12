@@ -116,3 +116,4 @@ firebase functions:config:set gmail.password="your-app-password"
 This architecture allows EmailJS to work on mobile because the API call is made from the Firebase backend (server-side), not from the mobile device.
 
 
+

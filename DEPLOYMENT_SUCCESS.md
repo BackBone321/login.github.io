@@ -53,3 +53,4 @@ https://console.firebase.google.com/project/customer-c538e/functions/logs
 
 Try creating a new account on your mobile device - the OTP emails should now work! 🎉
 
+
