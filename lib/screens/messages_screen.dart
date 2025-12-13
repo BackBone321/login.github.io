@@ -334,7 +334,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                     child: CircularProgressIndicator(color: primaryGreen),
                   );
                 }
-                
+
                 if (snapshot.hasError) {
                   return Center(
                     child: Column(
@@ -367,11 +367,11 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
                     ),
                   );
                 }
-                
+
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return _buildEmptyConversations();
                 }
-                
+
                 final conversations = snapshot.data!.toList();
                 // Sort by timestamp descending (most recent first)
                 conversations.sort((a, b) {
@@ -1203,6 +1203,8 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
       appBar: AppBar(
         backgroundColor: primaryGreen,
         elevation: 0,
+        titleSpacing: 0,
+        automaticallyImplyLeading: true,
         title: StreamBuilder<UserModel?>(
           stream: _dbService.getUserStream(widget.otherUser.uid),
           builder: (context, snapshot) {
@@ -1215,26 +1217,35 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                   size: 42,
                   addShadow: false,
                 ),
-                SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _resolveUserName(user),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _resolveUserName(user),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Text(
-                      _presenceLabel(user),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: online ? Colors.white : Colors.white70,
+                      SizedBox(height: 2),
+                      Text(
+                        _presenceLabel(user),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: online ? Colors.white : Colors.white70,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             );

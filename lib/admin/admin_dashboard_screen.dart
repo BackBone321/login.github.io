@@ -34,6 +34,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Get cached weather immediately if available for instant display
+    final cachedWeather = _weatherService.currentWeather;
+    if (cachedWeather != null) {
+      _currentWeather = cachedWeather;
+    }
+    
     _weatherService.startWeatherMonitoring();
     _weatherService.weatherStream.listen((weather) {
       setState(() {

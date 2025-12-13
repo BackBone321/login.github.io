@@ -21,10 +21,17 @@ class WeatherService {
   void startWeatherMonitoring() {
     if (_isMonitoring) return;
     _isMonitoring = true;
-    _updateWeather(); // Initial update
+    
+    // If we have cached weather, emit it immediately for instant display
+    if (_currentWeather != null) {
+      _weatherController.add(_currentWeather!);
+    }
+    
+    // Initial update asynchronously to avoid blocking
+    Future.microtask(() => _updateWeather());
 
-    // Update weather every 30 seconds for real-time feel
-    _weatherTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+    // Update weather every 2 minutes (reduced from 30 seconds for better performance)
+    _weatherTimer = Timer.periodic(Duration(minutes: 2), (timer) {
       _updateWeather();
     });
   }
@@ -38,100 +45,107 @@ class WeatherService {
   }
 
   void _updateWeather() {
-    final now = DateTime.now();
-    final isDaytime = now.hour >= 6 && now.hour < 18; // 6 AM to 6 PM
+    // Run weather calculation asynchronously to avoid blocking
+    Future.microtask(() {
+      if (!_isMonitoring) return; // Check if still monitoring
+      
+      final now = DateTime.now();
+      final isDaytime = now.hour >= 6 && now.hour < 18; // 6 AM to 6 PM
 
-    // Simulate realistic weather patterns
-    final random = Random();
+      // Simulate realistic weather patterns
+      final random = Random();
 
-    // Base temperature changes with time of day and season
-    double baseTemp = 25.0; // Base temperature
+      // Base temperature changes with time of day and season
+      double baseTemp = 25.0; // Base temperature
 
-    // Seasonal variation (rough approximation)
-    final month = now.month;
-    if (month >= 3 && month <= 5) baseTemp += 5; // Spring
-    if (month >= 6 && month <= 8) baseTemp += 10; // Summer
-    if (month >= 9 && month <= 11) baseTemp -= 2; // Fall
+      // Seasonal variation (rough approximation)
+      final month = now.month;
+      if (month >= 3 && month <= 5) baseTemp += 5; // Spring
+      if (month >= 6 && month <= 8) baseTemp += 10; // Summer
+      if (month >= 9 && month <= 11) baseTemp -= 2; // Fall
 
-    // Time of day variation
-    if (isDaytime) {
-      final hourProgress = (now.hour - 6) / 12; // 0 to 1 from 6 AM to 6 PM
-      baseTemp += sin(hourProgress * pi) * 8; // Natural temperature curve
-    } else {
-      baseTemp -= 5; // Cooler at night
-    }
+      // Time of day variation
+      if (isDaytime) {
+        final hourProgress = (now.hour - 6) / 12; // 0 to 1 from 6 AM to 6 PM
+        baseTemp += sin(hourProgress * pi) * 8; // Natural temperature curve
+      } else {
+        baseTemp -= 5; // Cooler at night
+      }
 
-    // Add some random variation (±3°C)
-    final temperature = baseTemp + (random.nextDouble() - 0.5) * 6;
+      // Add some random variation (±3°C)
+      final temperature = baseTemp + (random.nextDouble() - 0.5) * 6;
 
-    // Humidity based on temperature and time
-    final humidity = 60 + (30 - temperature) * 0.5 + random.nextDouble() * 20;
+      // Humidity based on temperature and time
+      final humidity = 60 + (30 - temperature) * 0.5 + random.nextDouble() * 20;
 
-    // Wind patterns
-    var windSpeed = 5.0 + random.nextDouble() * 25.0; // 5-30 km/h
-    final windDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    final windDirection = windDirections[random.nextInt(windDirections.length)];
+      // Wind patterns
+      var windSpeed = 5.0 + random.nextDouble() * 25.0; // 5-30 km/h
+      final windDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      final windDirection = windDirections[random.nextInt(windDirections.length)];
 
-    // Weather conditions based on various factors
-    String condition;
-    final rand = random.nextDouble();
+      // Weather conditions based on various factors
+      String condition;
+      final rand = random.nextDouble();
 
-    if (!isDaytime && rand < 0.3) {
-      condition = 'Clear'; // More likely clear at night
-    } else if (temperature > 30.0 && rand < 0.4) {
-      condition = 'Sunny';
-    } else if (humidity > 70.0 && rand < 0.3) {
-      condition = 'Rainy';
-    } else if (rand < 0.6) {
-      condition = 'Cloudy';
-    } else {
-      condition = 'Partly Cloudy';
-    }
+      if (!isDaytime && rand < 0.3) {
+        condition = 'Clear'; // More likely clear at night
+      } else if (temperature > 30.0 && rand < 0.4) {
+        condition = 'Sunny';
+      } else if (humidity > 70.0 && rand < 0.3) {
+        condition = 'Rainy';
+      } else if (rand < 0.6) {
+        condition = 'Cloudy';
+      } else {
+        condition = 'Partly Cloudy';
+      }
 
-    // Typhoon detection (rare occurrence)
-    final hasTyphoon = random.nextDouble() < 0.02; // 2% chance
-    String? typhoonName;
-    int typhoonStrength = 0;
+      // Typhoon detection (rare occurrence)
+      final hasTyphoon = random.nextDouble() < 0.02; // 2% chance
+      String? typhoonName;
+      int typhoonStrength = 0;
 
-    if (hasTyphoon) {
-      final typhoonNames = [
-        'Ambo',
-        'Butchoy',
-        'Carina',
-        'Dindo',
-        'Enteng',
-        'Ferdie',
-        'Gener',
-        'Helen',
-        'Igme',
-        'Julian',
-      ];
-      typhoonName = typhoonNames[random.nextInt(typhoonNames.length)];
-      typhoonStrength = random.nextInt(5) + 1; // 1-5 strength
+      if (hasTyphoon) {
+        final typhoonNames = [
+          'Ambo',
+          'Butchoy',
+          'Carina',
+          'Dindo',
+          'Enteng',
+          'Ferdie',
+          'Gener',
+          'Helen',
+          'Igme',
+          'Julian',
+        ];
+        typhoonName = typhoonNames[random.nextInt(typhoonNames.length)];
+        typhoonStrength = random.nextInt(5) + 1; // 1-5 strength
 
-      // Typhoons bring high winds and rain
-      condition = 'Stormy';
-      windSpeed = max(
-        windSpeed,
-        30.0 + random.nextDouble() * 50.0,
-      ); // 30-80 km/h
-    }
+        // Typhoons bring high winds and rain
+        condition = 'Stormy';
+        windSpeed = max(
+          windSpeed,
+          30.0 + random.nextDouble() * 50.0,
+        ); // 30-80 km/h
+      }
 
-    final weather = WeatherModel(
-      timestamp: now,
-      temperature: temperature.clamp(15, 45), // Reasonable temperature range
-      humidity: humidity.clamp(30, 95), // Reasonable humidity range
-      windSpeed: windSpeed.clamp(0, 100), // Reasonable wind range
-      windDirection: windDirection,
-      condition: condition,
-      isDaytime: isDaytime,
-      hasTyphoon: hasTyphoon,
-      typhoonName: typhoonName,
-      typhoonStrength: typhoonStrength,
-    );
+      final weather = WeatherModel(
+        timestamp: now,
+        temperature: temperature.clamp(15, 45), // Reasonable temperature range
+        humidity: humidity.clamp(30, 95), // Reasonable humidity range
+        windSpeed: windSpeed.clamp(0, 100), // Reasonable wind range
+        windDirection: windDirection,
+        condition: condition,
+        isDaytime: isDaytime,
+        hasTyphoon: hasTyphoon,
+        typhoonName: typhoonName,
+        typhoonStrength: typhoonStrength,
+      );
 
-    _currentWeather = weather;
-    _weatherController.add(weather);
+      _currentWeather = weather;
+      if (!_weatherController.isClosed) {
+        _weatherController.add(weather);
+      }
+    });
   }
 
   // Get weather forecast (simulate for next few hours)

@@ -80,12 +80,15 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 400;
               if (isWide) {
-                return TextButton.icon(
-                  onPressed: user == null ? null : _showCreateGroupDialog,
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('New Group'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF2E7D32),
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: TextButton.icon(
+                    onPressed: user == null ? null : _showCreateGroupDialog,
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('New Group'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF2E7D32),
+                    ),
                   ),
                 );
               } else {
@@ -98,7 +101,6 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
               }
             },
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: user == null
@@ -180,9 +182,14 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
   Widget _buildGroupsPanel() {
     final accent = const Color(0xFF2E7D32);
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Container(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 400;
+        final padding = isSmallScreen ? 12.0 : 24.0;
+        
+        return Padding(
+          padding: EdgeInsets.all(padding),
+          child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
@@ -198,9 +205,9 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
           stream: _dbService.getAllGroups(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
+              return Padding(
+                padding: EdgeInsets.all(padding),
+                child: const Center(child: CircularProgressIndicator()),
               );
             }
 
@@ -228,7 +235,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
               mainAxisSize: MainAxisSize.max,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                  padding: EdgeInsets.fromLTRB(padding, padding, padding, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -236,7 +243,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                       Text(
                         'Group channels',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: isSmallScreen ? 18 : 20,
                           fontWeight: FontWeight.w700,
                           color: accent,
                         ),
@@ -244,13 +251,20 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                       const SizedBox(height: 4),
                       Text(
                         '${groups.length} active groups · $totalMembers unique members',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                        style: TextStyle(
+                          color: Colors.grey[600], 
+                          fontSize: isSmallScreen ? 12 : 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Search groups or descriptions',
+                          hintText: isSmallScreen 
+                              ? 'Search groups...' 
+                              : 'Search groups or descriptions',
                           prefixIcon: const Icon(Icons.search, size: 20),
                           filled: true,
                           fillColor: const Color(0xFFF6F7FB),
@@ -271,7 +285,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                   child: filteredGroups.isEmpty
                       ? _buildEmptyGroupsState()
                       : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                          padding: EdgeInsets.fromLTRB(padding, 0, padding, padding),
                           itemCount: filteredGroups.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: 12),
@@ -291,6 +305,8 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
           },
         ),
       ),
+    );
+      },
     );
   }
 
@@ -329,120 +345,149 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
   Widget _buildGroupTile(GroupModel group, {required bool isSelected}) {
     final accent = const Color(0xFF2E7D32);
 
-    return InkWell(
-      onTap: () => setState(() => _selectedGroup = group),
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? accent.withOpacity(0.08)
-              : const Color(0xFFF9FAFB),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 400;
+        final padding = isSmallScreen ? 12.0 : 16.0;
+        final iconSize = isSmallScreen ? 40.0 : 44.0;
+        
+        return InkWell(
+          onTap: () => setState(() => _selectedGroup = group),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isSelected ? accent : Colors.transparent,
-            width: 1.2,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: accent.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: EdgeInsets.all(padding),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? accent.withOpacity(0.08)
+                  : const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isSelected ? accent : Colors.transparent,
+                width: 1.2,
               ),
-              child: const Icon(Icons.groups, color: Color(0xFF1B4332)),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: iconSize,
+                  height: iconSize,
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    Icons.groups, 
+                    color: const Color(0xFF1B4332),
+                    size: isSmallScreen ? 20 : 24,
+                  ),
+                ),
+                SizedBox(width: isSmallScreen ? 8 : 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: Text(
-                          group.name,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1B4332),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: accent.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.people_alt, size: 14),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${group.memberIds.length}',
-                              style: const TextStyle(
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              group.name,
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 14 : 16,
                                 fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1B4332),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(width: isSmallScreen ? 4 : 8),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isSmallScreen ? 6 : 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: accent.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.people_alt, 
+                                  size: isSmallScreen ? 12 : 14,
+                                ),
+                                SizedBox(width: isSmallScreen ? 2 : 4),
+                                Text(
+                                  '${group.memberIds.length}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: isSmallScreen ? 11 : 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: isSmallScreen ? 4 : 6),
+                      Text(
+                        group.description.isNotEmpty
+                            ? group.description
+                            : 'No description provided',
+                        style: TextStyle(
+                          color: Colors.grey[700], 
+                          fontSize: isSmallScreen ? 12 : 13,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: isSmallScreen ? 6 : 10),
+                      Wrap(
+                        spacing: isSmallScreen ? 4 : 8,
+                        runSpacing: isSmallScreen ? 4 : 6,
+                        children: [
+                          Chip(
+                            label: Text(
+                              group.adminIds.contains(group.creatorId)
+                                  ? 'Managed'
+                                  : 'Community',
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 10 : 12,
                               ),
                             ),
-                          ],
-                        ),
+                            backgroundColor: Colors.white,
+                            labelStyle: TextStyle(
+                              color: accent,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            padding: EdgeInsets.zero,
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          Chip(
+                            label: Text(
+                              group.createdAt.toLocal().toString().split(' ').first,
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 10 : 12,
+                              ),
+                            ),
+                            backgroundColor: Colors.white,
+                            padding: EdgeInsets.zero,
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    group.description.isNotEmpty
-                        ? group.description
-                        : 'No description provided',
-                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      Chip(
-                        label: Text(
-                          group.adminIds.contains(group.creatorId)
-                              ? 'Managed'
-                              : 'Community',
-                        ),
-                        backgroundColor: Colors.white,
-                        labelStyle: TextStyle(
-                          color: accent,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        padding: EdgeInsets.zero,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      Chip(
-                        label: Text(
-                          group.createdAt.toLocal().toString().split(' ').first,
-                        ),
-                        backgroundColor: Colors.white,
-                        padding: EdgeInsets.zero,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

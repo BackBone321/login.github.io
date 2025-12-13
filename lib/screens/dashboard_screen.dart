@@ -49,6 +49,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     _listenToDetections();
     _listenToUnreadMessages();
     WidgetsBinding.instance.addObserver(this);
+    
+    // Get cached weather immediately if available for instant display
+    final cachedWeather = _weatherService.currentWeather;
+    if (cachedWeather != null) {
+      _currentWeather = cachedWeather;
+    }
+    
     _weatherService.startWeatherMonitoring();
     _weatherSubscription = _weatherService.weatherStream.listen((weather) {
       if (!mounted) return;
