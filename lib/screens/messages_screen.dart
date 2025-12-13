@@ -281,7 +281,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
               SizedBox(
                 height: 110,
                 child: StreamBuilder<List<String>>(
-                  key: PageStorageKey('friends_stream'),
+                  key: const ValueKey('friends_stream'),
                   stream: _dbService.getFriends(_auth.currentUser!.uid),
                   builder: (context, friendsSnapshot) {
                     if (friendsSnapshot.connectionState ==
@@ -323,29 +323,73 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
 
         // Individual Conversations
         Expanded(
-          child: StreamBuilder<List<Map<String, dynamic>>>(
-            key: PageStorageKey('conversations_stream'),
-            stream: _dbService.getConversations(_auth.currentUser!.uid),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: CircularProgressIndicator(color: primaryGreen),
-                );
-              }
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return _buildEmptyConversations();
-              }
-              final conversations = snapshot.data!.toList().reversed.toList();
+          child: Container(
+            color: Colors.white,
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              key: const ValueKey('conversations_stream'),
+              stream: _dbService.getConversations(_auth.currentUser!.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: CircularProgressIndicator(color: primaryGreen),
+                  );
+                }
+                
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red.withOpacity(0.5),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Error loading conversations',
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          snapshot.error.toString(),
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return _buildEmptyConversations();
+                }
+                
+                final conversations = snapshot.data!.toList();
+                // Sort by timestamp descending (most recent first)
+                conversations.sort((a, b) {
+                  final timeA = a['timestamp'] as DateTime;
+                  final timeB = b['timestamp'] as DateTime;
+                  return timeB.compareTo(timeA);
+                });
 
-              return ListView.builder(
-                padding: EdgeInsets.all(20),
-                itemCount: conversations.length,
-                itemBuilder: (context, index) {
-                  final conversation = conversations[index];
-                  return _buildConversationCard(conversation);
-                },
-              );
-            },
+                return ListView.builder(
+                  padding: EdgeInsets.all(20),
+                  itemCount: conversations.length,
+                  itemBuilder: (context, index) {
+                    final conversation = conversations[index];
+                    return _buildConversationCard(conversation);
+                  },
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -356,7 +400,7 @@ class _EnhancedMessagesScreenState extends State<EnhancedMessagesScreen>
     final primaryGreen = Color(0xFF2E7D32);
 
     return StreamBuilder<List<GroupModel>>(
-      key: PageStorageKey('groups_tab'),
+      key: const ValueKey('groups_tab'),
       stream: _dbService.getUserGroups(_auth.currentUser!.uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {

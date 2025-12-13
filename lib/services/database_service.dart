@@ -814,61 +814,87 @@ class DatabaseService {
   }
 
   Stream<List<Map<String, dynamic>>> getConversations(String userId) {
-    return _firestore
-        .collection('messages')
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          final conversations = <String, Map<String, dynamic>>{};
+    if (userId.isEmpty) {
+      return Stream.value([]);
+    }
+    
+    try {
+      return _firestore
+          .collection('messages')
+          .orderBy('timestamp', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            try {
+              final conversations = <String, Map<String, dynamic>>{};
 
-          for (var doc in snapshot.docs) {
-            final data = doc.data();
-            final senderId = (data['senderId'] ?? '') as String;
-            final receiverId = (data['receiverId'] ?? '') as String;
+              for (var doc in snapshot.docs) {
+                try {
+                  final data = doc.data();
+                  final senderId = (data['senderId'] ?? '') as String;
+                  final receiverId = (data['receiverId'] ?? '') as String;
 
-            if (senderId != userId && receiverId != userId) {
-              continue;
+                  if (senderId != userId && receiverId != userId) {
+                    continue;
+                  }
+
+                  final otherUserId = senderId == userId ? receiverId : senderId;
+                  if (otherUserId.isEmpty) continue;
+
+                  final timestampRaw = data['timestamp'];
+                  DateTime timestamp;
+                  if (timestampRaw is Timestamp) {
+                    timestamp = timestampRaw.toDate();
+                  } else if (timestampRaw is String) {
+                    timestamp = DateTime.tryParse(timestampRaw) ?? DateTime.now();
+                  } else if (timestampRaw is DateTime) {
+                    timestamp = timestampRaw;
+                  } else {
+                    timestamp = DateTime.now();
+                  }
+
+                  final lastMessage = (data['content'] ?? '') as String;
+                  final senderName = (data['senderName'] ?? '') as String;
+
+                  final existing = conversations[otherUserId];
+                  if (existing == null ||
+                      (existing['timestamp'] as DateTime).isBefore(timestamp)) {
+                    conversations[otherUserId] = {
+                      'userId': otherUserId,
+                      'userName': senderName,
+                      'lastMessage': lastMessage,
+                      'timestamp': timestamp,
+                      'unread': 0,
+                    };
+                  }
+                } catch (e) {
+                  // Skip invalid documents
+                  continue;
+                }
+              }
+
+              final list = conversations.values.toList();
+              list.sort(
+                (a, b) => (b['timestamp'] as DateTime).compareTo(
+                  a['timestamp'] as DateTime,
+                ),
+              );
+              return list;
+            } catch (e) {
+              // Return empty list on error
+              print('Error processing conversations: $e');
+              return <Map<String, dynamic>>[];
             }
-
-            final otherUserId = senderId == userId ? receiverId : senderId;
-            if (otherUserId.isEmpty) continue;
-
-            final timestampRaw = data['timestamp'];
-            DateTime timestamp;
-            if (timestampRaw is Timestamp) {
-              timestamp = timestampRaw.toDate();
-            } else if (timestampRaw is String) {
-              timestamp = DateTime.tryParse(timestampRaw) ?? DateTime.now();
-            } else if (timestampRaw is DateTime) {
-              timestamp = timestampRaw;
-            } else {
-              timestamp = DateTime.now();
-            }
-
-            final lastMessage = (data['content'] ?? '') as String;
-            final senderName = (data['senderName'] ?? '') as String;
-
-            final existing = conversations[otherUserId];
-            if (existing == null ||
-                (existing['timestamp'] as DateTime).isBefore(timestamp)) {
-              conversations[otherUserId] = {
-                'userId': otherUserId,
-                'userName': senderName,
-                'lastMessage': lastMessage,
-                'timestamp': timestamp,
-                'unread': 0,
-              };
-            }
-          }
-
-          final list = conversations.values.toList();
-          list.sort(
-            (a, b) => (b['timestamp'] as DateTime).compareTo(
-              a['timestamp'] as DateTime,
-            ),
-          );
-          return list;
-        });
+          })
+          .handleError((error, stackTrace) {
+            // Log error but don't crash - the StreamBuilder will handle it
+            print('Error in getConversations stream: $error');
+            print('Stack trace: $stackTrace');
+          });
+    } catch (e) {
+      // If the query itself fails (e.g., missing index), return empty stream
+      print('Error creating getConversations stream: $e');
+      return Stream.value(<Map<String, dynamic>>[]);
+    }
   }
 
   // Search users

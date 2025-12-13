@@ -33,7 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   StreamSubscription<List<DetectionModel>>? _detectionSubscription;
   bool _detectionsLoading = true;
   final Widget _friendsScreen = const FriendsScreen();
-  final Widget _messagesScreen = const EnhancedMessagesScreen();
+  final Widget _messagesScreen = const EnhancedMessagesScreen(key: ValueKey('messages_screen'));
   final Widget _profileScreen = const ProfileScreen();
 
   // Notification badge counts
@@ -291,20 +291,17 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _getCurrentScreen() {
-    switch (_currentIndex) {
-      case 0:
-        return _buildHomeScreen();
-      case 1:
-        return _friendsScreen;
-      case 2:
-        return _buildPlantScreen();
-      case 3:
-        return _messagesScreen;
-      case 4:
-        return _profileScreen;
-      default:
-        return _buildHomeScreen();
-    }
+    // Use IndexedStack to keep all screens alive and preserve their state
+    return IndexedStack(
+      index: _currentIndex,
+      children: [
+        _buildHomeScreen(),
+        _friendsScreen,
+        _buildPlantScreen(),
+        _messagesScreen,
+        _profileScreen,
+      ],
+    );
   }
 
   Widget _buildHomeScreen() {
