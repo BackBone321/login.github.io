@@ -12,6 +12,7 @@ import 'admin_audit_screen.dart';
 import 'admin_detection_access_screen.dart';
 import 'admin_friends_screen.dart';
 import 'admin_messages_screen.dart';
+import 'admin_profile_screen.dart';
 import 'widgets/announcement_composer.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -33,13 +34,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     // Get cached weather immediately if available for instant display
     final cachedWeather = _weatherService.currentWeather;
     if (cachedWeather != null) {
       _currentWeather = cachedWeather;
     }
-    
+
     _weatherService.startWeatherMonitoring();
     _weatherService.weatherStream.listen((weather) {
       setState(() {
@@ -1064,6 +1065,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   ),
                   text: 'Plants',
                 ),
+                Tab(
+                  height: isMedium ? 48 : 44,
+                  icon: Icon(Icons.person_outline, size: isMedium ? 24 : 20),
+                  text: 'Profile',
+                ),
               ],
             ),
           ),
@@ -1098,6 +1104,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   'crop',
                   'crops',
                 ]),
+                AdminProfileScreen(),
               ],
             ),
           ),
