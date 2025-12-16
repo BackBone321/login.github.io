@@ -33,7 +33,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   StreamSubscription<List<DetectionModel>>? _detectionSubscription;
   bool _detectionsLoading = true;
   final Widget _friendsScreen = const FriendsScreen();
-  final Widget _messagesScreen = const EnhancedMessagesScreen(key: ValueKey('messages_screen'));
+  final Widget _messagesScreen = const EnhancedMessagesScreen(
+    key: ValueKey('messages_screen'),
+  );
   final Widget _profileScreen = const ProfileScreen();
 
   // Notification badge counts
@@ -49,13 +51,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     _listenToDetections();
     _listenToUnreadMessages();
     WidgetsBinding.instance.addObserver(this);
-    
+
     // Get cached weather immediately if available for instant display
     final cachedWeather = _weatherService.currentWeather;
     if (cachedWeather != null) {
       _currentWeather = cachedWeather;
     }
-    
+
     _weatherService.startWeatherMonitoring();
     _weatherSubscription = _weatherService.weatherStream.listen((weather) {
       if (!mounted) return;
@@ -71,21 +73,25 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     // Listen to unread direct messages
     _unreadDirectSubscription?.cancel();
-    _unreadDirectSubscription = _dbService.getUnreadMessageCount(_userId!).listen((count) {
-      if (!mounted) return;
-      setState(() {
-        _unreadDirectMessages = count;
-      });
-    });
+    _unreadDirectSubscription = _dbService
+        .getUnreadMessageCount(_userId!)
+        .listen((count) {
+          if (!mounted) return;
+          setState(() {
+            _unreadDirectMessages = count;
+          });
+        });
 
     // Listen to unread group messages
     _unreadGroupSubscription?.cancel();
-    _unreadGroupSubscription = _dbService.getUnreadGroupMessageCount(_userId!).listen((count) {
-      if (!mounted) return;
-      setState(() {
-        _unreadGroupMessages = count;
-      });
-    });
+    _unreadGroupSubscription = _dbService
+        .getUnreadGroupMessageCount(_userId!)
+        .listen((count) {
+          if (!mounted) return;
+          setState(() {
+            _unreadGroupMessages = count;
+          });
+        });
   }
 
   @override
@@ -252,7 +258,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   /// Builds an icon with a sky blue notification badge
-  Widget _buildIconWithBadge(IconData icon, int count, {bool isActive = false}) {
+  Widget _buildIconWithBadge(
+    IconData icon,
+    int count, {
+    bool isActive = false,
+  }) {
     const skyBlue = Color(0xFF87CEEB);
 
     return Stack(
@@ -277,10 +287,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                 ],
               ),
-              constraints: BoxConstraints(
-                minWidth: 16,
-                minHeight: 16,
-              ),
+              constraints: BoxConstraints(minWidth: 16, minHeight: 16),
               child: Center(
                 child: Text(
                   count > 99 ? '99+' : count.toString(),
@@ -539,7 +546,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                           ),
                           if (isOwner)
                             GestureDetector(
-                              onTap: () => _confirmDeleteAnnouncement(announcement),
+                              onTap: () =>
+                                  _confirmDeleteAnnouncement(announcement),
                               child: Container(
                                 padding: EdgeInsets.all(6),
                                 decoration: BoxDecoration(
@@ -1001,7 +1009,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     return '${date.month}/${date.day}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}';
   }
 
-  Future<void> _confirmDeleteAnnouncement(AnnouncementModel announcement) async {
+  Future<void> _confirmDeleteAnnouncement(
+    AnnouncementModel announcement,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

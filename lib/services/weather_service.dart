@@ -21,12 +21,12 @@ class WeatherService {
   void startWeatherMonitoring() {
     if (_isMonitoring) return;
     _isMonitoring = true;
-    
+
     // If we have cached weather, emit it immediately for instant display
     if (_currentWeather != null) {
       _weatherController.add(_currentWeather!);
     }
-    
+
     // Initial update asynchronously to avoid blocking
     Future.microtask(() => _updateWeather());
 
@@ -48,7 +48,7 @@ class WeatherService {
     // Run weather calculation asynchronously to avoid blocking
     Future.microtask(() {
       if (!_isMonitoring) return; // Check if still monitoring
-      
+
       final now = DateTime.now();
       final isDaytime = now.hour >= 6 && now.hour < 18; // 6 AM to 6 PM
 
@@ -81,7 +81,8 @@ class WeatherService {
       // Wind patterns
       var windSpeed = 5.0 + random.nextDouble() * 25.0; // 5-30 km/h
       final windDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-      final windDirection = windDirections[random.nextInt(windDirections.length)];
+      final windDirection =
+          windDirections[random.nextInt(windDirections.length)];
 
       // Weather conditions based on various factors
       String condition;

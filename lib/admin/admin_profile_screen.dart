@@ -328,37 +328,37 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                               maxLines: 3,
                             )
                           : userModel?.bio != null && userModel!.bio!.isNotEmpty
-                              ? Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: lightGreen,
-                                    borderRadius: BorderRadius.circular(12),
+                          ? Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: lightGreen,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'About Me',
+                                    style: TextStyle(
+                                      color: primaryGreen,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'About Me',
-                                        style: TextStyle(
-                                          color: primaryGreen,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        userModel.bio!,
-                                        style: TextStyle(
-                                          color: Colors.grey[700],
-                                          fontSize: 16,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ],
+                                  SizedBox(height: 8),
+                                  Text(
+                                    userModel.bio!,
+                                    style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontSize: 16,
+                                      height: 1.4,
+                                    ),
                                   ),
-                                )
-                              : SizedBox.shrink(),
+                                ],
+                              ),
+                            )
+                          : SizedBox.shrink(),
 
                       // Edit/Save Button
                       SizedBox(height: 24),
@@ -368,7 +368,8 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                             setState(() {
                               _isEditing = true;
                               _selectedAvatarId ??=
-                                  _cachedUser?.avatarStyle ?? defaultAvatarStyle;
+                                  _cachedUser?.avatarStyle ??
+                                  defaultAvatarStyle;
                             });
                           },
                           icon: Icon(Icons.edit),
@@ -396,7 +397,6 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                                     _selectedAvatarId = null;
                                   });
                                 },
-                                child: Text('Cancel'),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: primaryGreen,
                                   side: BorderSide(color: primaryGreen),
@@ -405,6 +405,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
+                                child: Text('Cancel'),
                               ),
                             ),
                             SizedBox(width: 12),
@@ -645,10 +646,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Reset Password',
-          style: TextStyle(color: primaryGreen),
-        ),
+        title: Text('Reset Password', style: TextStyle(color: primaryGreen)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -957,4 +955,3 @@ class _PatternPainter extends CustomPainter {
   @override
   bool shouldRepaint(_PatternPainter oldDelegate) => false;
 }
-
